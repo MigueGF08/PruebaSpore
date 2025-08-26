@@ -92,7 +92,7 @@ router.post('/register', async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const usuarios = await Usuarios.findAll({
-      attributes: ['id', 'correo', ] // Excluir contraseña
+      attributes: ['id', 'correo', 'createdAt', 'updatedAt'] // Excluir contraseña
     });
     
     res.json({
