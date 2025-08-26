@@ -18,6 +18,9 @@ function login() {
     isLoggedIn.value = false
   }
 }
+function registrar() {
+  router.push({ name: 'Registrar' }) // Redirige a Registrar.vue
+}
 </script>
 
 <template>
@@ -34,7 +37,9 @@ function login() {
       </div>
       <button @click="login">Entrar</button>
       <p v-if="error" class="error">{{ error }}</p>
+      <button @click="registrar">Registrarte</button>
     </div>
+    
     <div v-else>
       <p>¡Bienvenido, {{ username }}!</p>
     </div>

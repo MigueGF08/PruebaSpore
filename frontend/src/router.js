@@ -3,6 +3,7 @@ import HelloWorld from './components/HelloWorld.vue'
 import Principal from './components/Principal.vue'
 import MisCarros from './components/MisCarros.vue'
 import AgregarCarro from './components/AgregarCarro.vue'
+import Registrar from './components/Registrar.vue'
 
 const routes = [
   {
@@ -24,7 +25,13 @@ const routes = [
     path: '/agregar-carro',
     name: 'AgregarCarro',
     component: AgregarCarro
-  }
+  },
+  {path: '/registar',
+    name: 'Registrar',
+    component: Registrar
+
+  } 
+
 ]
 
 const router = createRouter({

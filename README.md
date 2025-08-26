@@ -26,3 +26,7 @@ to install swagger
 ```cmd
     npm install swagger-jsdoc swagger-ui-express
 ```
+to install bcrypt
+``` cmd
+ npm install bcrypt
+```
