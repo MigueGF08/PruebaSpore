@@ -21,10 +21,13 @@
         <input id="lng" v-model="lng" type="number" step="any" placeholder="Ej: -99.1332" />
       </div>
       <button @click="updateMap">Mostrar en el mapa</button>
+      <button @click="editCar">Eliminar Carros</button>
+      <button @click="deleteCar">Editar Carros</button>
       <div id="map" class="map"></div>
     </main>
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -49,6 +52,13 @@ function updateMap() {
     marker.setLatLng([lat.value, lng.value])
     map.setView([lat.value, lng.value], 13)
   }
+}
+function editCar() {
+  
+}
+
+function deleteCar() {
+  
 }
 </script>
 

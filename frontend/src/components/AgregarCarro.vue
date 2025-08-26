@@ -100,7 +100,14 @@ function submitForm() {
     .then(res => res.json())
     .then(data => {
         alert('Carro guardado correctamente');
-        // Limpia el formulario si lo deseas
+        // Limpia el formulario
+        carName.value = ''
+        carModel.value = ''
+        carYear.value = ''
+        carColor.value = ''
+        carLat.value = 19.4326
+        carLng.value = -99.1332
+        marker.setLatLng([carLat.value, carLng.value])
     })
     .catch(err => {
         alert('Error al guardar el carro');
