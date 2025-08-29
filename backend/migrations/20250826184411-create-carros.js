@@ -1,35 +1,36 @@
 'use strict';
 
 module.exports = {
-  async up(queryInterface, Sequelize) {   
-    // Tabla de Carros
-    await queryInterface.createTable('Carros', {
+  async up(queryInterface, Sequelize) {
+    // Cars table
+    await queryInterface.createTable('Cars', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      usuarioId: {
+      userId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'Usuarios',
+          model: 'Users',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      placas: {
+      licensePlate: {
         type: Sequelize.STRING,
         allowNull: false,
-        unique: true
+        unique: true,
+        field: 'license_plate' // Snake case for database
       },
-      marca: {
+      brand: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      modelo: {
+      model: {
         type: Sequelize.STRING,
         allowNull: false
       },
@@ -37,29 +38,47 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      latitud: {
-        type: Sequelize.DOUBLE,
-        allowNull: false
-      },
-      longitud: {
-        type: Sequelize.DOUBLE,
-        allowNull: false
+      location: {
+        type: Sequelize.GEOGRAPHY('POINT'),
+        allowNull: true
       },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
+        field: 'created_at'
       },
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.fn('NOW'),
+        field: 'updated_at'
+      },
+      deletedAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        field: 'deleted_at'
       }
     });
+
+    // Create spatial index
+    await queryInterface.sequelize.query(`
+      CREATE INDEX idx_cars_location ON "Cars" USING GIST (location);
+    `);
+
+    // Create index for deletedAt (improves soft delete query performance)
+    await queryInterface.addIndex('Cars', ['deleted_at']);
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Carros');
-    await queryInterface.dropTable('Usuarios');
+    // Remove indexes first
+    await queryInterface.sequelize.query(`
+      DROP INDEX IF EXISTS idx_cars_location;
+    `);
+    
+    await queryInterface.removeIndex('Cars', ['deleted_at']);
+    
+    // Then drop the table
+    await queryInterface.dropTable('Cars');
   }
 };

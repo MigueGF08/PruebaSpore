@@ -2,46 +2,87 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const error = ref('')
-const isLoggedIn = ref(false)
+const loading = ref(false)
 const router = useRouter()
 
-function login() {
-  if (username.value === 'admin' && password.value === '1234') {
-    isLoggedIn.value = true
-    error.value = ''
-    router.push({ name: 'Principal' }) // Redirige a Principal.vue
-  } else {
-    error.value = 'Usuario o contraseña incorrectos'
-    isLoggedIn.value = false
+async function login() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const response = await fetch('http://localhost:3000/api/users/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.success) {
+      // Guardar datos de usuario en localStorage
+      localStorage.setItem('user', JSON.stringify(data.data))
+      localStorage.setItem('token', data.data.token || 'authenticated')
+      
+      // Redirigir al dashboard o principal
+      router.push({ name: 'Principal' })
+    } else {
+      error.value = data.error || 'Usuario o contraseña incorrectos'
+    }
+  } catch (err) {
+    error.value = 'Error de conexión. Verifica que el servidor esté funcionando.'
+    console.error('Login error:', err)
+  } finally {
+    loading.value = false
   }
 }
+
 function registrar() {
-  router.push({ name: 'Registrar' }) // Redirige a Registrar.vue
+  router.push({ name: 'Registrar' })
 }
 </script>
 
 <template>
   <div class="login-container">
     <h1>Iniciar Sesión</h1>
-    <div v-if="!isLoggedIn">
+    <div>
       <div class="input-group">
-        <label for="username">Usuario:</label>
-        <input id="username" v-model="username" type="text" autocomplete="username" />
+        <label for="email">Correo Electrónico:</label>
+        <input 
+          id="email" 
+          v-model="email" 
+          type="email" 
+          autocomplete="email"
+          placeholder="tu@email.com"
+          :disabled="loading"
+        />
       </div>
       <div class="input-group">
         <label for="password">Contraseña:</label>
-        <input id="password" v-model="password" type="password" autocomplete="current-password" />
+        <input 
+          id="password" 
+          v-model="password" 
+          type="password" 
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+          :disabled="loading"
+        />
       </div>
-      <button @click="login">Entrar</button>
+      <button @click="login" :disabled="loading">
+        <span v-if="loading">Iniciando sesión...</span>
+        <span v-else>Entrar</span>
+      </button>
       <p v-if="error" class="error">{{ error }}</p>
-      <button @click="registrar">Registrarte</button>
-    </div>
-    
-    <div v-else>
-      <p>¡Bienvenido, {{ username }}!</p>
+      <button @click="registrar" :disabled="loading">
+        Registrarte
+      </button>
     </div>
   </div>
 </template>
@@ -73,7 +114,14 @@ input {
   width: 100%;
   padding: 6px;
   box-sizing: border-box;
-  color: #f8f8f8; /* Letras negras en el input */
+  color: #000; /* Cambié a letras negras */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
 }
 
 button {
@@ -84,15 +132,23 @@ button {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  margin-bottom: 8px;
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background: #369870;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .error {
   color: #d32f2f;
   margin-top: 8px;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
 @media (max-width: 400px) {

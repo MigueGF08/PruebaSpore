@@ -1,54 +1,104 @@
 <template>
   <div class="principal">
- 
+    <!-- Navbar -->
+    <nav class="navbar">
+      <ul>
+        <li><router-link to="/" class="nav-link">Home</router-link></li>
+        <li><router-link to="/login" class="nav-link">Login</router-link></li>
+        <li><router-link to="/register" class="nav-link">Register</router-link></li>
+      </ul>
+    </nav>
 
     <!-- Contenido principal -->
     <header>
-      <h1>Registro de Usuario</h1>
+      <h1>User Registration</h1>
     </header>
 
     <form @submit.prevent="handleRegister" class="register-form">
+      <!-- First Name -->
+      <div class="form-group">
+        <label for="firstName">First Name *</label>
+        <input
+          type="text"
+          id="firstName"
+          v-model="user.firstName"
+          required
+          placeholder="Your first name"
+          :class="{ 'error-input': errors.firstName }"
+        >
+        <span v-if="errors.firstName" class="error-text">{{ errors.firstName }}</span>
+      </div>
+
+      <!-- Last Name -->
+      <div class="form-group">
+        <label for="lastName">Last Name *</label>
+        <input
+          type="text"
+          id="lastName"
+          v-model="user.lastName"
+          required
+          placeholder="Your last name"
+          :class="{ 'error-input': errors.lastName }"
+        >
+        <span v-if="errors.lastName" class="error-text">{{ errors.lastName }}</span>
+      </div>
+
       <!-- Email -->
       <div class="form-group">
-        <label for="correo">Correo electrónico *</label>
+        <label for="email">Email *</label>
         <input
           type="email"
-          id="correo"
-          v-model="usuario.correo"
+          id="email"
+          v-model="user.email"
           required
-          placeholder="tu.correo@ejemplo.com"
-          :class="{ 'error-input': errors.correo }"
+          placeholder="your.email@example.com"
+          :class="{ 'error-input': errors.email }"
         >
-        <span v-if="errors.correo" class="error-text">{{ errors.correo }}</span>
+        <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
       </div>
 
-      <!-- Contraseña -->
+      <!-- Phone -->
       <div class="form-group">
-        <label for="contrasena">Contraseña *</label>
+        <label for="phone">Phone</label>
         <input
-          type="password"
-          id="contrasena"
-          v-model="usuario.contrasena"
-          required
-          placeholder="Mínimo 6 caracteres"
-          minlength="6"
-          :class="{ 'error-input': errors.contrasena }"
+          type="tel"
+          id="phone"
+          v-model="user.phone"
+          placeholder="+1234567890"
+          :class="{ 'error-input': errors.phone }"
         >
-        <span v-if="errors.contrasena" class="error-text">{{ errors.contrasena }}</span>
+        <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
       </div>
 
-      <!-- Confirmar Contraseña -->
+      <!-- Password -->
       <div class="form-group">
-        <label for="confirmarContrasena">Confirmar contraseña *</label>
+        <label for="password">Password *</label>
         <input
           type="password"
-          id="confirmarContrasena"
-          v-model="usuario.confirmarContrasena"
+          id="password"
+          v-model="user.password"
           required
-          placeholder="Repite tu contraseña"
-          :class="{ 'error-input': errors.confirmarContrasena }"
+          placeholder="Min 8 characters with uppercase, lowercase, number & special"
+          :class="{ 'error-input': errors.password }"
         >
-        <span v-if="errors.confirmarContrasena" class="error-text">{{ errors.confirmarContrasena }}</span>
+        <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
+        <div class="password-requirements">
+          <small>Must include: uppercase, lowercase, number, special character (@$!%*?&)</small>
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password *</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          v-model="user.confirmPassword"
+          required
+          placeholder="Repeat your password"
+          :class="{ 'error-input': errors.confirmPassword }"
+        >
+        <span v-if="errors.confirmPassword" class="error-text">{{ errors.confirmPassword }}</span>
       </div>
 
       <!-- Botón de registro -->
@@ -57,8 +107,8 @@
         class="register-btn"
         :disabled="loading"
       >
-        <span v-if="loading">Registrando...</span>
-        <span v-else>Crear Cuenta</span>
+        <span v-if="loading">Registering...</span>
+        <span v-else>Create Account</span>
       </button>
     </form>
 
@@ -68,11 +118,11 @@
     </div>
     
     <div v-if="successMessage" class="alert success">
-      <strong>Éxito:</strong> {{ successMessage }}
+      <strong>Success:</strong> {{ successMessage }}
     </div>
 
     <p class="login-link">
-      ¿Ya tienes cuenta? <router-link to="/login">Inicia sesión aquí</router-link>
+      Already have an account? <router-link to="/">Login here</router-link>
     </p>
   </div>
 </template>
@@ -89,16 +139,22 @@ export default {
     const errorMessage = ref('')
     const successMessage = ref('')
 
-    const usuario = reactive({
-      correo: '',
-      contrasena: '',
-      confirmarContrasena: ''
+    const user = reactive({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: ''
     })
 
     const errors = reactive({
-      correo: '',
-      contrasena: '',
-      confirmarContrasena: ''
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: ''
     })
 
     const validateForm = () => {
@@ -107,31 +163,52 @@ export default {
       // Limpiar errores anteriores
       Object.keys(errors).forEach(key => errors[key] = '')
 
-      // Validar email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!usuario.correo) {
-        errors.correo = 'El correo es requerido'
+      // Validar firstName
+      if (!user.firstName) {
+        errors.firstName = 'First name is required'
         isValid = false
-      } else if (!emailRegex.test(usuario.correo)) {
-        errors.correo = 'Ingresa un correo electrónico válido'
+      } else if (user.firstName.length < 2) {
+        errors.firstName = 'First name must be at least 2 characters'
         isValid = false
       }
 
-      // Validar contraseña
-      if (!usuario.contrasena) {
-        errors.contrasena = 'La contraseña es requerida'
+      // Validar lastName
+      if (!user.lastName) {
+        errors.lastName = 'Last name is required'
         isValid = false
-      } else if (usuario.contrasena.length < 6) {
-        errors.contrasena = 'La contraseña debe tener al menos 6 caracteres'
+      } else if (user.lastName.length < 2) {
+        errors.lastName = 'Last name must be at least 2 characters'
         isValid = false
+      }
+
+      // Validar email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!user.email) {
+        errors.email = 'Email is required'
+        isValid = false
+      } else if (!emailRegex.test(user.email)) {
+        errors.email = 'Please enter a valid email address'
+        isValid = false
+      }
+
+      // Validar password
+      if (!user.password) {
+        errors.password = 'Password is required'
+        isValid = false
+      } else {
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+        if (!passwordRegex.test(user.password)) {
+          errors.password = 'Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+          isValid = false
+        }
       }
 
       // Validar confirmación
-      if (!usuario.confirmarContrasena) {
-        errors.confirmarContrasena = 'Confirma tu contraseña'
+      if (!user.confirmPassword) {
+        errors.confirmPassword = 'Please confirm your password'
         isValid = false
-      } else if (usuario.contrasena !== usuario.confirmarContrasena) {
-        errors.confirmarContrasena = 'Las contraseñas no coinciden'
+      } else if (user.password !== user.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match'
         isValid = false
       }
 
@@ -148,43 +225,50 @@ export default {
       successMessage.value = ''
 
       try {
-        const response = await fetch('http://localhost:3000/api/usuarios/register', {
+        const response = await fetch('http://localhost:3000/api/users/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            correo: usuario.correo,
-            contrasena: usuario.contrasena
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone,
+            password: user.password
           })
         })
 
         const data = await response.json()
 
         if (data.success) {
-          successMessage.value = data.message
+          successMessage.value = data.message || 'User registered successfully'
+          
           // Limpiar formulario
-          usuario.correo = ''
-          usuario.contrasena = ''
-          usuario.confirmarContrasena = ''
+          user.firstName = ''
+          user.lastName = ''
+          user.email = ''
+          user.phone = ''
+          user.password = ''
+          user.confirmPassword = ''
           
           // Redirigir después de 2 segundos
           setTimeout(() => {
-            router.push('/login')
+            router.push('/')
           }, 2000)
         } else {
-          errorMessage.value = data.message || 'Error al registrar usuario'
+          errorMessage.value = data.error || data.message || 'Error registering user'
         }
       } catch (error) {
-        errorMessage.value = 'Error de conexión. Verifica que el servidor esté funcionando.'
-        console.error('Error en registro:', error)
+        errorMessage.value = 'Connection error. Please check if the server is running.'
+        console.error('Registration error:', error)
       } finally {
         loading.value = false
       }
     }
 
     return {
-      usuario,
+      user,
       errors,
       loading,
       errorMessage,
@@ -294,6 +378,12 @@ input:focus {
   font-size: 0.8rem;
   margin-top: 0.3rem;
   display: block;
+}
+
+.password-requirements {
+  margin-top: 0.3rem;
+  color: #666;
+  font-size: 0.75rem;
 }
 
 .register-btn {

@@ -1,24 +1,28 @@
 'use strict';
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
-  const Carros = sequelize.define('Carros', {
-    usuarioId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Usuarios',
-        key: 'id'
-      }
-    },
-    placas: {
+  class Car extends Model {
+    static associate(models) {
+      Car.belongsTo(models.User, {
+        foreignKey: 'userId',
+        as: 'user'
+      });
+    }
+  }
+  
+  Car.init({
+    licensePlate: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
+      unique: true,
+      field: 'license_plate'
     },
-    marca: {
+    brand: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    modelo: {
+    model: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -26,21 +30,35 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    latitud: {
-      type: DataTypes.DOUBLE,
-      allowNull: false
+    location: {
+      type: DataTypes.GEOGRAPHY('POINT'),
+      allowNull: true
     },
-    longitud: {
-      type: DataTypes.DOUBLE,
-      allowNull: false
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'Users',
+        key: 'id'
+      },
+      field: 'user_id'
+    },
+    deletedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'deleted_at'
     }
   }, {
-    tableName: 'Carros'
+    sequelize,
+    modelName: 'Car',
+    tableName: 'Cars',
+    paranoid: true, // Enables soft delete
+    indexes: [
+      {
+        fields: ['deleted_at']
+      }
+    ]
   });
-
-  Carros.associate = function(models) {
-    Carros.belongsTo(models.Usuarios, { foreignKey: 'id', as: 'usuario' });
-  };
-
-  return Carros;
+  
+  return Car;
 };
