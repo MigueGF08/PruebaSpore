@@ -9,6 +9,22 @@ module.exports = (sequelize, DataTypes) => {
         as: 'user'
       });
     }
+
+    // Método para obtener la imagen como base64
+    getImageBase64() {
+      if (this.imageData) {
+        return this.imageData.toString('base64');
+      }
+      return null;
+    }
+
+    // Método para obtener data URL
+    getImageDataUrl() {
+      if (this.imageData && this.imageType) {
+        return `data:${this.imageType};base64,${this.imageData.toString('base64')}`;
+      }
+      return null;
+    }
   }
   
   Car.init({
@@ -29,6 +45,33 @@ module.exports = (sequelize, DataTypes) => {
     color: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    imageData: {
+      type: DataTypes.BLOB,
+      allowNull: true,
+      field: 'image_data'
+    },
+    imageName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'image_name'
+    },
+    imageType: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'image_type',
+      validate: {
+        isIn: [['image/jpeg', 'image/png', 'image/gif', 'image/webp']]
+      }
+    },
+    imageSize: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'image_size',
+      validate: {
+        min: 0,
+        max: 5242880 // Máximo 5MB
+      }
     },
     location: {
       type: DataTypes.GEOGRAPHY('POINT'),
@@ -52,11 +95,10 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Car',
     tableName: 'Cars',
-    paranoid: true, // Enables soft delete
+    paranoid: true,
     indexes: [
-      {
-        fields: ['deleted_at']
-      }
+      { fields: ['deleted_at'] },
+      { fields: ['image_name'] }
     ]
   });
   

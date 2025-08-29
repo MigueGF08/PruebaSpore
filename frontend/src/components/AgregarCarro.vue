@@ -1,4 +1,3 @@
-
 <template>
     <div class="AgregarCarro">
         <nav class="navbar">
@@ -12,7 +11,7 @@
             <h1>Agrega tus carros</h1>
         </header>
         <main>
-            <p>Agrega aqui tus carros </p>
+            <p>Agrega aquí tus carros</p>
             <form class="car-form" @submit.prevent="submitForm">
                 <div class="input-group">
                     <label for="car-name">Marca del Carro:</label>
@@ -23,13 +22,31 @@
                     <input id="car-model" type="text" v-model="carModel" required />
                 </div>
                 <div class="input-group">
-                    <label for="car-year">Placas del Carro:</label>
-                    <input id="car-year" type="number" v-model="carYear" required />
+                    <label for="car-plates">Placas del Carro:</label>
+                    <input id="car-plates" type="text" v-model="carPlates" required />
                 </div>
                 <div class="input-group">
                     <label for="car-color">Color del Carro:</label>
                     <input id="car-color" type="text" v-model="carColor" required />
                 </div>
+                
+                <!-- Selector de imagen -->
+                <div class="input-group">
+                    <label for="car-image">Imagen del Carro:</label>
+                    <input 
+                        id="car-image" 
+                        type="file" 
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        @change="handleImageUpload"
+                        ref="fileInput"
+                    />
+                    <div v-if="imagePreview" class="image-preview">
+                        <img :src="imagePreview" alt="Vista previa" class="preview-image" />
+                        <button type="button" @click="removeImage" class="remove-image-btn">×</button>
+                    </div>
+                    <p v-if="uploading" class="upload-status">Subiendo imagen...</p>
+                </div>
+
                 <div class="input-group">
                     <label>Posición del carro:</label>
                     <div id="map" class="map"></div>
@@ -38,7 +55,10 @@
                         <span>Longitud: {{ carLng }}</span>
                     </div>
                 </div>
-                <button type="submit">Agregar Carro</button>
+                
+                <button type="submit" :disabled="uploading">
+                    {{ uploading ? 'Guardando...' : 'Agregar Carro' }}
+                </button>
             </form>
         </main>
     </div>
@@ -51,10 +71,14 @@ import 'leaflet/dist/leaflet.css'
 
 const carName = ref('')
 const carModel = ref('')
-const carYear = ref('')
+const carPlates = ref('')
 const carColor = ref('')
 const carLat = ref(19.4326) // CDMX por defecto
 const carLng = ref(-99.1332)
+const imageFile = ref(null)
+const imagePreview = ref(null)
+const uploading = ref(false)
+const fileInput = ref(null)
 
 let map
 let marker
@@ -68,50 +92,136 @@ onMounted(() => {
 
     // Actualiza coordenadas al mover el marcador
     marker.on('move', (e) => {
-        carLat.value = e.latlng.lat
-        carLng.value = e.latlng.lng
+        carLat.value = e.latlng.lat.toFixed(6)
+        carLng.value = e.latlng.lng.toFixed(6)
     })
 
     // Permite seleccionar posición haciendo click en el mapa
     map.on('click', (e) => {
         marker.setLatLng(e.latlng)
-        carLat.value = e.latlng.lat
-        carLng.value = e.latlng.lng
+        carLat.value = e.latlng.lat.toFixed(6)
+        carLng.value = e.latlng.lng.toFixed(6)
     })
 })
 
-function submitForm() {
-    // Aquí puedes obtener el usuarioId de la sesión o de un estado global
-    const usuarioId = 1; // Cambia esto por el id real del usuario autenticado
+// Manejar la subida de imagen
+const handleImageUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        // Validar tamaño (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('La imagen no debe exceder los 5MB')
+            fileInput.value.value = ''
+            return
+        }
 
-    fetch('http://localhost:3000/api/carros', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            usuarioId,
-            placas: carYear.value,
-            marca: carName.value,
-            modelo: carModel.value,
-            color: carColor.value,
-            latitud: carLat.value,
-            longitud: carLng.value
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert('Carro guardado correctamente');
-        // Limpia el formulario
-        carName.value = ''
-        carModel.value = ''
-        carYear.value = ''
-        carColor.value = ''
-        carLat.value = 19.4326
-        carLng.value = -99.1332
+        // Validar tipo de archivo
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if (!validTypes.includes(file.type)) {
+            alert('Solo se permiten imágenes JPEG, PNG, GIF o WebP')
+            fileInput.value.value = ''
+            return
+        }
+
+        imageFile.value = file
         
+        // Crear vista previa
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            imagePreview.value = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
+
+// Eliminar imagen seleccionada
+const removeImage = () => {
+    imageFile.value = null
+    imagePreview.value = null
+    fileInput.value.value = ''
+}
+
+// Convertir imagen a Base64
+const convertImageToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => {
+            // Remover el prefijo data:image/... para obtener solo el base64
+            const base64 = reader.result.split(',')[1]
+            resolve(base64)
+        }
+        reader.onerror = error => reject(error)
     })
-    .catch(err => {
-        alert('Error al guardar el carro');
-    });
+}
+
+const submitForm = async () => {
+    try {
+        uploading.value = true
+        
+        // Aquí puedes obtener el usuarioId de la sesión o de un estado global
+        const usuarioId = 1; // Cambia esto por el id real del usuario autenticado
+
+        const carData = {
+            userId: usuarioId,
+            licensePlate: carPlates.value,
+            brand: carName.value,
+            model: carModel.value,
+            color: carColor.value,
+            latitude: parseFloat(carLat.value),
+            longitude: parseFloat(carLng.value)
+        }
+
+        // Si hay imagen, agregarla al payload
+        if (imageFile.value) {
+            const imageBase64 = await convertImageToBase64(imageFile.value)
+            carData.imageData = imageBase64
+            carData.imageName = imageFile.value.name
+            carData.imageType = imageFile.value.type
+            carData.imageSize = imageFile.value.size
+        }
+
+        const response = await fetch('http://localhost:3000/api/carros', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}` // Si usas autenticación
+            },
+            body: JSON.stringify(carData)
+        })
+
+        const data = await response.json()
+
+        if (data.success) {
+            alert('Carro guardado correctamente')
+            // Limpia el formulario
+            resetForm()
+        } else {
+            alert('Error al guardar el carro: ' + (data.error || 'Error desconocido'))
+        }
+    } catch (error) {
+        console.error('Error:', error)
+        alert('Error al guardar el carro')
+    } finally {
+        uploading.value = false
+    }
+}
+
+// Resetear formulario
+const resetForm = () => {
+    carName.value = ''
+    carModel.value = ''
+    carPlates.value = ''
+    carColor.value = ''
+    carLat.value = 19.4326
+    carLng.value = -99.1332
+    imageFile.value = null
+    imagePreview.value = null
+    fileInput.value.value = ''
+    
+    // Resetear mapa
+    marker.setLatLng([19.4326, -99.1332])
+    map.setView([19.4326, -99.1332], 13)
 }
 </script>
 
@@ -198,6 +308,9 @@ p {
     outline: none;
     background: #f1f8e9;
 }
+.input-group input[type="file"] {
+    padding: 6px;
+}
 .car-form button[type="submit"] {
     width: 100%;
     padding: 10px 0;
@@ -211,7 +324,11 @@ p {
     transition: background 0.2s;
     margin-top: 8px;
 }
-.car-form button[type="submit"]:hover {
+.car-form button[type="submit"]:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+.car-form button[type="submit"]:hover:not(:disabled) {
     background: #369870;
 }
 .map {
@@ -229,5 +346,41 @@ p {
     font-size: 14px;
     color: #369870;
     margin-top: 6px;
+}
+/* Estilos para la imagen */
+.image-preview {
+    position: relative;
+    margin-top: 10px;
+    display: inline-block;
+}
+.preview-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #42b983;
+}
+.remove-image-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4757;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+.remove-image-btn:hover {
+    background: #ff3742;
+}
+.upload-status {
+    color: #42b983;
+    font-size: 14px;
+    margin-top: 5px;
+    font-style: italic;
 }
 </style>

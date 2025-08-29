@@ -10,7 +10,8 @@ app.use(cors());
 app.options('*', cors());
 app.use(express.json());
 
-// Routes
+// Routes - ORDEN CORRECTO
+app.use('/api/auth', require('./routes/AuthLogin')); // ← NUEVA RUTA DE AUTH
 app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/carros', require('./routes/carros'));
 
@@ -37,14 +38,27 @@ const PORT = process.env.PORT || 3000;
 // Sincronizar base de datos y luego iniciar servidor
 sequelize.sync({ force: false }) // force: true solo en desarrollo
   .then(() => {
-    console.log('Base de datos sincronizada');
+    console.log('✅ Base de datos sincronizada');
+    console.log('📊 Modelos cargados:');
+    
+    // Listar todos los modelos cargados para verificación
+    const models = sequelize.models;
+    Object.keys(models).forEach(modelName => {
+      console.log(`   - ${modelName}`);
+    });
     
     // SOLO UNA LLAMADA A app.listen()
     app.listen(PORT, () => {
-      console.log(`Servidor ejecutándose en puerto ${PORT}`);
-      console.log(`Documentación API: http://localhost:${PORT}/api-docs`);
+      console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);
+      console.log(`📚 Documentación API: http://localhost:${PORT}/api-docs`);
+      console.log('\n📍 Endpoints disponibles:');
+      console.log('   POST /api/AuthLogin/login');
+      console.log('   POST /api/AuthLogin/register');
+      console.log('   GET  /api/usuarios');
+      console.log('   GET  /api/carros');
+      console.log('   GET  /api-docs (Swagger)');
     });
   })
   .catch(error => {
-    console.error('Error sincronizando base de datos:', error);
+    console.error('❌ Error sincronizando base de datos:', error);
   });

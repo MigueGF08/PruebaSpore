@@ -24,7 +24,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
-        field: 'license_plate' // Snake case for database
+        field: 'license_plate'
       },
       brand: {
         type: Sequelize.STRING,
@@ -37,6 +37,30 @@ module.exports = {
       color: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      imageData: {
+        type: Sequelize.BLOB,
+        allowNull: true,
+        field: 'image_data',
+        comment: 'Datos binarios de la imagen en formato BYTEA'
+      },
+      imageName: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        field: 'image_name',
+        comment: 'Nombre original del archivo de imagen'
+      },
+      imageType: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        field: 'image_type',
+        comment: 'Tipo MIME de la imagen (ej: image/jpeg, image/png)'
+      },
+      imageSize: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        field: 'image_size',
+        comment: 'Tamaño de la imagen en bytes'
       },
       location: {
         type: Sequelize.GEOGRAPHY('POINT'),
@@ -66,8 +90,13 @@ module.exports = {
       CREATE INDEX idx_cars_location ON "Cars" USING GIST (location);
     `);
 
-    // Create index for deletedAt (improves soft delete query performance)
+    // Create index for deletedAt
     await queryInterface.addIndex('Cars', ['deleted_at']);
+
+    // Create index for image name (no único)
+    await queryInterface.addIndex('Cars', ['image_name']);
+
+    console.log('✅ Tabla Cars creada con soporte para imágenes BYTEA');
   },
 
   async down(queryInterface, Sequelize) {
@@ -77,6 +106,7 @@ module.exports = {
     `);
     
     await queryInterface.removeIndex('Cars', ['deleted_at']);
+    await queryInterface.removeIndex('Cars', ['image_name']);
     
     // Then drop the table
     await queryInterface.dropTable('Cars');

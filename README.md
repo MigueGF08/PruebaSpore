@@ -1,13 +1,14 @@
-Nodejs Version 24.6.0
+ 
+Nodejs Version 24.6.0 
 Vue 3 + vite 
   ➜  Local:   http://localhost:5173/
   apis port 3000
 swagger version:
 nvm version: 11.5.1
 
-Use this commands for run the project 
+Use this commands for run the project.
 
-to install the map 
+to install the map .
 ``` cmd
  npm install leaflet 
 ```
@@ -30,3 +31,5 @@ to install bcrypt
 ``` cmd
  npm install bcrypt
 ```
+to install bcryptjs
+npm install bcryptjs
