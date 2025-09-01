@@ -27,6 +27,7 @@ const validatePasswordStrength = (password) => {
   return errors;
 };
 
+
 // GET /api/users - Get all active users (admin only)
 router.get('/', async (req, res) => {
   try {

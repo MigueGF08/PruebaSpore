@@ -1,4 +1,3 @@
-// models/index.js (debe verse así)
 'use strict';
 
 const fs = require('fs');

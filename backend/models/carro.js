@@ -96,6 +96,7 @@ module.exports = (sequelize, DataTypes) => {
     modelName: 'Car',
     tableName: 'Cars',
     paranoid: true,
+    underscored: true,
     indexes: [
       { fields: ['deleted_at'] },
       { fields: ['image_name'] }

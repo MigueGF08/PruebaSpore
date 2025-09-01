@@ -104,6 +104,7 @@ module.exports = (sequelize, DataTypes) => {
     modelName: 'User',
     tableName: 'Users',
     paranoid: true, // Enable soft delete
+     underscored: true,
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {

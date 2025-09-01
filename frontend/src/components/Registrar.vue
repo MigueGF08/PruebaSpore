@@ -1,13 +1,7 @@
 <template>
   <div class="principal">
     <!-- Navbar -->
-    <nav class="navbar">
-      <ul>
-        <li><router-link to="/" class="nav-link">Home</router-link></li>
-        <li><router-link to="/login" class="nav-link">Login</router-link></li>
-        <li><router-link to="/register" class="nav-link">Register</router-link></li>
-      </ul>
-    </nav>
+   
 
     <!-- Contenido principal -->
     <header>
@@ -69,6 +63,19 @@
         >
         <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
       </div>
+
+      <!-- Role -->
+<div class="form-group">
+  <label for="role">Tipo *</label>
+  <select
+    id="role"
+    v-model="user.role"
+    class="form-control"
+  >
+    <option value="usuario">Usuario</option>
+  </select>
+</div>
+
 
       <!-- Password -->
       <div class="form-group">
@@ -225,7 +232,7 @@ export default {
       successMessage.value = ''
 
       try {
-        const response = await fetch('http://localhost:3000/api/usuarios', {
+        const response = await fetch('http://localhost:3000/api/usuarios/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
