@@ -65,16 +65,6 @@
       </div>
 
       <!-- Role -->
-<div class="form-group">
-  <label for="role">Tipo *</label>
-  <select
-    id="role"
-    v-model="user.role"
-    class="form-control"
-  >
-    <option value="usuario">Usuario</option>
-  </select>
-</div>
 
 
       <!-- Password -->

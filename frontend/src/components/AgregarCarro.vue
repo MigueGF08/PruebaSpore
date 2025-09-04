@@ -5,6 +5,12 @@
                 <li><router-link to="/principal" class="nav-link" exact>Principal</router-link></li>
                 <li><router-link to="/mis-carros" class="nav-link">Mis Carros</router-link></li>
                 <li><router-link to="/agregar-carro" class="nav-link">Agregar Carros</router-link></li>
+                  <li>
+          <router-link to="/" class="nav-link" @click.native="logout">
+            Cerrar Sesión
+          </router-link>
+        </li>
+        
             </ul>
         </nav>
         <header>

@@ -500,6 +500,9 @@ router.get('/:id/cars', async (req, res) => {
   }
 });
 
+
+
+
 // CORS handling
 router.options('*', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');

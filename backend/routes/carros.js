@@ -132,6 +132,177 @@ router.post('/', async (req, res) => {
   }
 });
 
+// PATCH /api/carros/:id/edit - Editar carro (nueva ruta específica para edición)
+router.patch('/:id/edit', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'ID de carro inválido' 
+      });
+    }
+
+    // Buscar el carro
+    const car = await Car.findByPk(id, {
+      include: ['user']
+    });
+    
+    if (!car) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Carro no encontrado' 
+      });
+    }
+
+    // Verificar que el carro no esté eliminado
+    if (car.deletedAt) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'No se puede editar un carro eliminado' 
+      });
+    }
+
+    const { 
+      licensePlate, 
+      brand, 
+      model, 
+      color, 
+      imageData, 
+      imageName, 
+      imageType, 
+      imageSize, 
+      latitude, 
+      longitude 
+    } = req.body;
+
+    // Validaciones de campos
+    const updateData = {};
+    
+    if (licensePlate !== undefined) {
+      if (typeof licensePlate !== 'string' || licensePlate.trim().length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'La placa debe ser un texto válido' 
+        });
+      }
+      updateData.licensePlate = licensePlate.trim();
+    }
+
+    if (brand !== undefined) {
+      if (typeof brand !== 'string' || brand.trim().length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'La marca debe ser un texto válido' 
+        });
+      }
+      updateData.brand = brand.trim();
+    }
+
+    if (model !== undefined) {
+      if (typeof model !== 'string' || model.trim().length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'El modelo debe ser un texto válido' 
+        });
+      }
+      updateData.model = model.trim();
+    }
+
+    if (color !== undefined) {
+      if (typeof color !== 'string' || color.trim().length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'El color debe ser un texto válido' 
+        });
+      }
+      updateData.color = color.trim();
+    }
+
+    // Manejar imagen si se proporciona
+    if (imageData !== undefined) {
+      if (imageData === null || imageData === '') {
+        // Eliminar imagen existente
+        updateData.imageData = null;
+        updateData.imageName = null;
+        updateData.imageType = null;
+        updateData.imageSize = null;
+      } else {
+        try {
+          // Validar formato base64
+          if (typeof imageData !== 'string') {
+            return res.status(400).json({ 
+              success: false,
+              error: 'Los datos de imagen deben estar en formato base64' 
+            });
+          }
+          
+          updateData.imageData = Buffer.from(imageData, 'base64');
+          updateData.imageName = imageName || car.imageName || 'car_image_updated';
+          updateData.imageType = imageType || car.imageType || 'image/jpeg';
+          updateData.imageSize = imageSize || Math.round((imageData.length * 3) / 4 - 2);
+        } catch (error) {
+          return res.status(400).json({ 
+            success: false,
+            error: 'Formato de imagen inválido' 
+          });
+        }
+      }
+    }
+
+    // Manejar ubicación si se proporciona
+    if (latitude !== undefined && longitude !== undefined) {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Coordenadas de ubicación inválidas' 
+        });
+      }
+      
+      updateData.location = {
+        type: 'Point',
+        coordinates: [lng, lat]
+      };
+    }
+
+    // Solo actualizar si hay cambios
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'No se proporcionaron datos para actualizar' 
+      });
+    }
+
+    // Actualizar el carro
+    await car.update(updateData);
+    
+    // Obtener el carro actualizado sin datos binarios
+    const updatedCar = await Car.findByPk(id, {
+      attributes: { exclude: ['imageData'] },
+      include: ['user']
+    });
+    
+    res.json({
+      success: true,
+      message: 'Carro editado exitosamente',
+      data: updatedCar,
+      updated_fields: Object.keys(updateData)
+    });
+    
+  } catch (error) {
+    console.error('Error al editar carro:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al editar el carro' 
+    });
+  }
+});
+
 // PUT /api/carros/:id - Update car with image support
 router.put('/:id', async (req, res) => {
   try {
@@ -258,10 +429,264 @@ router.delete('/:id/force', async (req, res) => {
   }
 });
 
+router.patch('/:id/delete', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'ID de carro inválido' 
+      });
+    }
+
+    const car = await Car.findByPk(id);
+    
+    if (!car) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Carro no encontrado' 
+      });
+    }
+
+    // Verificar que el carro no esté ya eliminado
+    if (car.deletedAt) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'El carro ya está eliminado' 
+      });
+    }
+
+    // Realizar soft delete
+    await car.destroy();
+    
+    res.json({
+      success: true,
+      message: 'Carro eliminado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar carro:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al eliminar el carro' 
+    });
+  }
+});
+
+// PATCH /api/carros/:id/restore - Restore deleted car (para usar desde el frontend)
+router.patch('/:id/restore', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'ID de carro inválido' 
+      });
+    }
+
+    const car = await Car.findByPk(id, { paranoid: false });
+    
+    if (!car) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Carro no encontrado' 
+      });
+    }
+
+    // Verificar que el carro esté eliminado
+    if (!car.deletedAt) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'El carro no está eliminado' 
+      });
+    }
+
+    // Restaurar el carro
+    await car.restore();
+    
+    // No enviar los datos binarios en la respuesta
+    const responseCar = car.toJSON();
+    delete responseCar.imageData;
+    
+    res.json({
+      success: true,
+      message: 'Carro restaurado exitosamente',
+      data: responseCar
+    });
+  } catch (error) {
+    console.error('Error al restaurar carro:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al restaurar el carro' 
+    });
+  }
+});
+
+// GET /api/carros/user/:userId - Get all cars for a specific user
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Validar que el ID de usuario sea un número válido
+    if (!userId || isNaN(parseInt(userId))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'ID de usuario inválido' 
+      });
+    }
+
+    const cars = await Car.findAll({
+      where: { 
+        userId: parseInt(userId),
+        deletedAt: null 
+      },
+      attributes: { exclude: ['imageData'] },
+      include: ['user']
+    });
+    
+    res.json({
+      success: true,
+      data: cars,
+      count: cars.length
+    });
+  } catch (error) {
+    console.error('Error al obtener carros del usuario:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al obtener carros del usuario' 
+    });
+  }
+});
+
+// GET /api/carros/:id/with-image - Get car by ID with image data
+router.get('/:id/with-image', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Validar que el ID sea un número válido
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'ID de carro inválido' 
+      });
+    }
+
+    const car = await Car.findByPk(id, {
+      include: ['user']
+    });
+    
+    if (!car) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Carro no encontrado' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: car
+    });
+  } catch (error) {
+    console.error('Error al obtener carro con imagen:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al obtener el carro' 
+    });
+  }
+});
+
+// GET /api/carros/license-plate/:licensePlate - Get car by license plate
+router.get('/license-plate/:licensePlate', async (req, res) => {
+  try {
+    const { licensePlate } = req.params;
+    
+    if (!licensePlate || licensePlate.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Placa inválida' 
+      });
+    }
+
+    const car = await Car.findOne({
+      where: { 
+        licensePlate: licensePlate.trim().toUpperCase(),
+        deletedAt: null 
+      },
+      attributes: { exclude: ['imageData'] },
+      include: ['user']
+    });
+    
+    if (!car) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Carro no encontrado' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: car
+    });
+  } catch (error) {
+    console.error('Error al obtener carro por placa:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al obtener el carro' 
+    });
+  }
+});
+
+// GET /api/carros/stats/count - Get car count statistics
+router.get('/stats/count', async (req, res) => {
+  try {
+    const totalCars = await Car.count({
+      where: { deletedAt: null }
+    });
+    
+    const totalWithImages = await Car.count({
+      where: { 
+        deletedAt: null,
+        imageData: { [Op.ne]: null }
+      }
+    });
+    
+    const totalWithLocation = await Car.count({
+      where: { 
+        deletedAt: null,
+        location: { [Op.ne]: null }
+      }
+    });
+    
+    const deletedCars = await Car.count({
+      where: { deletedAt: { [Op.ne]: null } },
+      paranoid: false
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        total: totalCars,
+        with_images: totalWithImages,
+        with_location: totalWithLocation,
+        deleted: deletedCars
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor al obtener estadísticas' 
+    });
+  }
+});
+
 // CORS handling
 router.options('*', (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS,PATCH');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.sendStatus(200);
 });

@@ -19,6 +19,11 @@
             Agregar Carros
           </router-link>
         </li>
+          <li>
+          <router-link to="/" class="nav-link" @click.native="logout">
+            Cerrar Sesión
+          </router-link>
+        </li>
       </ul>
     </nav>
 
