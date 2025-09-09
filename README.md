@@ -9,21 +9,21 @@ nvm version: 11.5.1
 Use this commands for run the project.
 
 to install the map .
-``` cmd
+ cmd
  npm install leaflet 
-```
+
 use this command in the terminal on the proyect
 
 to install vue
-``` cmd
+ cmd
  npm install vue
 ```
 
 to install vite
-``` cmd 
+ cmd 
     npm install vite
-```
-to install swagger
+    
+    to install swagger
 ```cmd
     npm install swagger-jsdoc swagger-ui-express
 ```
@@ -33,3 +33,6 @@ to install bcrypt
 ```
 to install bcryptjs
 npm install bcryptjs
+
+to install the token 
+npm install jsonwebtoken

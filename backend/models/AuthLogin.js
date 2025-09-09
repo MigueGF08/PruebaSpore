@@ -1,6 +1,7 @@
 'use strict';
 const { Model } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // Añade esta línea
 
 module.exports = (sequelize, DataTypes) => {
   class Auth extends Model {
@@ -35,6 +36,17 @@ module.exports = (sequelize, DataTypes) => {
           };
         }
 
+        // Generar token JWT
+        const token = jwt.sign(
+          { 
+            id: user.id, 
+            email: user.email,
+            role: user.role 
+          },
+          process.env.JWT_SECRET || 'tu-clave-secreta', // Usa una variable de entorno
+          { expiresIn: '24h' }
+        );
+
         // Excluir la contraseña de la respuesta
         const userResponse = {
           id: user.id,
@@ -43,7 +55,8 @@ module.exports = (sequelize, DataTypes) => {
           lastName: user.lastName,
           role: user.role,
           isActive: user.isActive,
-          lastLogin: new Date()
+          lastLogin: new Date(),
+          token: token // Añadir el token a la respuesta
         };
 
         // Actualizar último login
@@ -102,5 +115,4 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   return Auth;
-};  
-
+};

@@ -25,11 +25,22 @@ async function login() {
     })
 
     const data = await response.json()
+    console.log('Respuesta del login:', data); // DEBUG
 
     if (data.success) {
-      // Guardar datos de usuario en localStorage
-      localStorage.setItem('user', JSON.stringify(data.data))
-      localStorage.setItem('token', data.data.token || 'authenticated')
+      // ¡CORREGIDO! Guardar datos en localStorage con los nombres correctos
+      localStorage.setItem('userId', data.data.id.toString());
+      localStorage.setItem('authToken', data.data.token || data.data.id.toString());
+      localStorage.setItem('userRole', data.data.role);
+      localStorage.setItem('userName', `${data.data.firstName} ${data.data.lastName}`);
+      
+      // DEBUG: Verificar que se guardó correctamente
+      console.log('Datos guardados en localStorage:', {
+        userId: localStorage.getItem('userId'),
+        authToken: localStorage.getItem('authToken'),
+        userRole: localStorage.getItem('userRole'),
+        userName: localStorage.getItem('userName')
+      });
       
       // Redirigir al dashboard o principal
       router.push({ name: 'Principal' })
@@ -88,6 +99,7 @@ function registrar() {
 </template>
 
 <style scoped>
+/* Tus estilos se mantienen igual */
 .login-container {
   max-width: 300px;
   width: 90vw;
@@ -114,7 +126,7 @@ input {
   width: 100%;
   padding: 6px;
   box-sizing: border-box;
-  color: #000; /* Cambié a letras negras */
+  color: #000;
   border: 1px solid #ccc;
   border-radius: 4px;
 }

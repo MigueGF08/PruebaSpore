@@ -27,7 +27,6 @@ const validatePasswordStrength = (password) => {
   return errors;
 };
 
-
 // GET /api/users - Get all active users (admin only)
 router.get('/', async (req, res) => {
   try {
@@ -49,6 +48,29 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting users:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// GET /api/users/ids-roles - Get only IDs and roles of all users
+router.get('/ids-roles', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: { deletedAt: null },
+      attributes: ['id', 'role'], // Solo obtenemos el ID y el rol
+      order: [['id', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error('Error getting users IDs and roles:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal server error' 
@@ -83,8 +105,11 @@ router.get('/deleted', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
     const user = await User.findByPk(id, {
-      attributes: { exclude: ['password'] },
+      attributes: { 
+        exclude: ['password'] 
+      },
       include: [{
         model: Car,
         as: 'cars',
@@ -100,9 +125,21 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    // Formatear la respuesta para el frontend
     res.json({
       success: true,
-      data: user
+      data: {
+        id: user.id,
+        email: user.email,
+        first_name: user.firstName,
+        last_name: user.lastName,
+        phone: user.phone,
+        role: user.role,
+        last_login: user.lastLogin,
+        is_active: user.isActive,
+        created_at: user.createdAt,
+        updated_at: user.updatedAt
+      }
     });
   } catch (error) {
     console.error('Error getting user:', error);
@@ -254,7 +291,7 @@ router.post('/login', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, phone, role, isActive } = req.body;
+    const { firstName, lastName, phone, role, isActive, userId } = req.body; // Agregado userId
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -270,6 +307,7 @@ router.put('/:id', async (req, res) => {
     if (phone !== undefined) updateData.phone = phone;
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (userId !== undefined) updateData.userId = userId; // Agregado para userId
 
     await user.update(updateData);
 
@@ -284,7 +322,8 @@ router.put('/:id', async (req, res) => {
         phone: user.phone,
         role: user.role,
         isActive: user.isActive,
-        lastLogin: user.lastLogin
+        lastLogin: user.lastLogin,
+        userId: user.userId // Agregado para incluir userId en la respuesta
       }
     });
   } catch (error) {
@@ -295,6 +334,7 @@ router.put('/:id', async (req, res) => {
     });
   }
 });
+  
 
 // PUT /api/users/:id/password - Change password
 router.put('/:id/password', async (req, res) => {
@@ -486,7 +526,12 @@ router.get('/:id/cars', async (req, res) => {
     res.json({
       success: true,
       data: {
-        user: user,
+        user: {
+          id: user.id,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          email: user.email
+        },
         cars: cars,
         count: cars.length
       }
@@ -499,9 +544,6 @@ router.get('/:id/cars', async (req, res) => {
     });
   }
 });
-
-
-
 
 // CORS handling
 router.options('*', (req, res) => {

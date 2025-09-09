@@ -4,6 +4,8 @@ import Principal from './components/Principal.vue'
 import MisCarros from './components/MisCarros.vue'
 import AgregarCarro from './components/AgregarCarro.vue'
 import Registrar from './components/Registrar.vue'
+import CarrosRegistrados from './components/CarrosRegistrados.vue'
+import UsuariosRegistrados from './components/UsuariosRegistrados.vue'
 
 const routes = [
   {
@@ -29,6 +31,16 @@ const routes = [
   {path: '/registar',
     name: 'Registrar',
     component: Registrar
+
+  },
+   {path: '/CarrosRegistrados',
+    name: 'CarrosRegistrados',
+    component: CarrosRegistrados
+
+  },
+   {path: '/UsuariosRegistrados',
+    name: 'UsuariosRegistrados',
+    component: UsuariosRegistrados
 
   } 
 

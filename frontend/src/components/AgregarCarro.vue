@@ -5,12 +5,22 @@
                 <li><router-link to="/principal" class="nav-link" exact>Principal</router-link></li>
                 <li><router-link to="/mis-carros" class="nav-link">Mis Carros</router-link></li>
                 <li><router-link to="/agregar-carro" class="nav-link">Agregar Carros</router-link></li>
-                  <li>
+                 
+         <li>
+          <router-link to="/CarrosRegistrados" class="nav-link">
+            Carros Registrados
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/UsuariosRegistrados" class="nav-link">
+            Usuarios
+          </router-link>
+        </li>
+         <li>
           <router-link to="/" class="nav-link" @click.native="logout">
             Cerrar Sesión
           </router-link>
         </li>
-        
             </ul>
         </nav>
         <header>
@@ -19,6 +29,12 @@
         <main>
             <p>Agrega aquí tus carros</p>
             <form class="car-form" @submit.prevent="submitForm">
+                <!-- Campo para user_id agregado -->
+                <div class="input-group">
+                    <label for="user-id">ID del Usuario:</label>
+                    <input id="user-id" type="text" v-model="userId" required />
+                </div>
+                
                 <div class="input-group">
                     <label for="car-name">Marca del Carro:</label>
                     <input id="car-name" type="text" v-model="carName" required />
@@ -75,6 +91,8 @@ import { ref, onMounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+// Agregar userId al estado reactivo
+const userId = ref('')
 const carName = ref('')
 const carModel = ref('')
 const carPlates = ref('')
@@ -165,11 +183,9 @@ const submitForm = async () => {
     try {
         uploading.value = true
         
-        // Aquí puedes obtener el usuarioId de la sesión o de un estado global
-        const usuarioId = 1; // Cambia esto por el id real del usuario autenticado
-
+        // Usar el userId del campo del formulario en lugar del valor fijo
         const carData = {
-            userId: usuarioId,
+            userId: userId.value,  // Cambiado: usar el valor del campo
             licensePlate: carPlates.value,
             brand: carName.value,
             model: carModel.value,
@@ -215,6 +231,7 @@ const submitForm = async () => {
 
 // Resetear formulario
 const resetForm = () => {
+    userId.value = ''  // Agregado: resetear el campo userId
     carName.value = ''
     carModel.value = ''
     carPlates.value = ''
@@ -228,6 +245,13 @@ const resetForm = () => {
     // Resetear mapa
     marker.setLatLng([19.4326, -99.1332])
     map.setView([19.4326, -99.1332], 13)
+}
+
+// Función para cerrar sesión
+const logout = () => {
+    // Lógica para cerrar sesión
+    console.log('Cerrando sesión...')
+    // Por ejemplo: limpiar token, redirigir, etc.
 }
 </script>
 
