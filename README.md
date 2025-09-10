@@ -36,3 +36,12 @@ npm install bcryptjs
 
 to install the token 
 npm install jsonwebtoken
+
+to install socket.io frontend
+
+to install socket.io backend 
+
+to install tailwind 
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+

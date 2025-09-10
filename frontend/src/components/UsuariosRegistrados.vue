@@ -40,12 +40,26 @@
     <section class="usuarios-registrados">
       <h2>Usuarios Registrados</h2>
 
+      <!-- Barra de búsqueda -->
+      <div class="search-container">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar por nombre, email, teléfono o ID..."
+          class="search-input"
+          @input="handleSearch"
+        />
+        <button v-if="searchQuery" @click="clearSearch" class="clear-search-btn">
+          &times;
+        </button>
+      </div>
+
       <div v-if="loading" class="loading">Cargando usuarios...</div>
       <div v-if="errorMessage" class="error-text">{{ errorMessage }}</div>
 
       <div v-else class="user-list">
         <div
-          v-for="user in activeUsers"
+          v-for="user in filteredActiveUsers"
           :key="user.id"
           class="user-card"
         >
@@ -80,15 +94,35 @@
             </button>
           </div>
         </div>
+        
+        <!-- Mensaje cuando no hay resultados -->
+        <div v-if="filteredActiveUsers.length === 0 && !loading" class="no-results">
+          <p v-if="searchQuery">No se encontraron usuarios que coincidan con "{{ searchQuery }}"</p>
+          <p v-else>No hay usuarios registrados</p>
+        </div>
       </div>
     </section>
 
     <!-- Sección de Usuarios Eliminados -->
     <section class="usuarios-eliminados" v-if="deletedUsers.length > 0">
       <h2>Usuarios Eliminados</h2>
+      
+      <!-- Barra de búsqueda para usuarios eliminados -->
+      <div class="search-container">
+        <input
+          v-model="searchDeletedQuery"
+          type="text"
+          placeholder="Buscar usuarios eliminados..."
+          class="search-input"
+        />
+        <button v-if="searchDeletedQuery" @click="searchDeletedQuery = ''" class="clear-search-btn">
+          &times;
+        </button>
+      </div>
+      
       <div class="user-list">
         <div
-          v-for="user in deletedUsers"
+          v-for="user in filteredDeletedUsers"
           :key="user.id"
           class="user-card deleted"
         >
@@ -117,6 +151,11 @@
               Restaurar
             </button>
           </div>
+        </div>
+        
+        <!-- Mensaje cuando no hay resultados -->
+        <div v-if="filteredDeletedUsers.length === 0 && searchDeletedQuery" class="no-results">
+          <p>No se encontraron usuarios eliminados que coincidan con "{{ searchDeletedQuery }}"</p>
         </div>
       </div>
     </section>
@@ -221,9 +260,43 @@ const showEditModal = ref(false)
 const editingUser = ref({})
 const saving = ref(false)
 
+// Estados para búsqueda
+const searchQuery = ref('')
+const searchDeletedQuery = ref('')
+
 // Computed para separar usuarios activos
 const activeUsers = computed(() => {
   return users.value.filter(user => !user.deletedAt)
+})
+
+// Computed para filtrar usuarios activos según búsqueda
+const filteredActiveUsers = computed(() => {
+  if (!searchQuery.value) return activeUsers.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return activeUsers.value.filter(user => {
+    return (
+      (user.name && user.name.toLowerCase().includes(query)) ||
+      (user.email && user.email.toLowerCase().includes(query)) ||
+      (user.phone && user.phone.toLowerCase().includes(query)) ||
+      (user.id && user.id.toString().includes(query))
+    )
+  })
+})
+
+// Computed para filtrar usuarios eliminados según búsqueda
+const filteredDeletedUsers = computed(() => {
+  if (!searchDeletedQuery.value) return deletedUsers.value
+  
+  const query = searchDeletedQuery.value.toLowerCase()
+  return deletedUsers.value.filter(user => {
+    return (
+      (user.name && user.name.toLowerCase().includes(query)) ||
+      (user.email && user.email.toLowerCase().includes(query)) ||
+      (user.phone && user.phone.toLowerCase().includes(query)) ||
+      (user.id && user.id.toString().includes(query))
+    )
+  })
 })
 
 // Función para obtener todos los usuarios
@@ -255,6 +328,17 @@ async function fetchUsers() {
   } finally {
     loading.value = false
   }
+}
+
+// Función para manejar búsqueda
+function handleSearch() {
+  // Puedes agregar lógica adicional aquí si necesitas
+  // como un debounce para búsquedas con muchas coincidencias
+}
+
+// Función para limpiar búsqueda
+function clearSearch() {
+  searchQuery.value = ''
 }
 
 // Función para abrir modal de edición
@@ -466,6 +550,55 @@ onMounted(fetchUsers)
   background: #369870;
 }
 
+/* --------- Barra de búsqueda ---------- */
+.search-container {
+  position: relative;
+  margin: 20px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  font-size: 16px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #42b983;
+  box-shadow: 0 2px 8px rgba(66, 185, 131, 0.3);
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.clear-search-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
 /* --------- Usuarios Registrados ---------- */
 .usuarios-registrados,
 .usuarios-eliminados {
@@ -595,6 +728,15 @@ onMounted(fetchUsers)
 
 .restore-btn:hover {
   background: #2980b9;
+}
+
+/* Mensaje sin resultados */
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #777;
+  font-style: italic;
 }
 
 /* --------- Modal de Edición ---------- */
@@ -766,6 +908,10 @@ onMounted(fetchUsers)
   .modal-content {
     width: 95%;
     margin: 10px;
+  }
+  
+  .search-container {
+    margin: 15px 0;
   }
 }
 </style>

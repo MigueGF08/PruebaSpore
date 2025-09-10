@@ -118,6 +118,20 @@ router.post('/', async (req, res) => {
 
     const car = await Car.create(carData);
     
+    // Emitir evento de nuevo carro a través de Socket.io
+    if (req.io) {
+      const carResponse = car.toJSON();
+      delete carResponse.imageData; // No enviar datos binarios por socket
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-created', carResponse);
+      
+      // Para el usuario específico dueño del carro
+      if (carResponse.userId) {
+        req.io.to(`user-${carResponse.userId}`).emit('car-created', carResponse);
+      }
+    }
+    
     // No enviar los datos binarios en la respuesta
     const responseCar = car.toJSON();
     delete responseCar.imageData;
@@ -281,6 +295,24 @@ router.patch('/:id/edit', async (req, res) => {
     // Actualizar el carro
     await car.update(updateData);
     
+    // Emitir evento de carro actualizado a través de Socket.io
+    if (req.io) {
+      const updatedCar = await Car.findByPk(id, {
+        attributes: { exclude: ['imageData'] },
+        include: ['user']
+      });
+      
+      const carResponse = updatedCar.toJSON();
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-updated', carResponse);
+      
+      // Para el usuario específico dueño del carro
+      if (carResponse.userId) {
+        req.io.to(`user-${carResponse.userId}`).emit('car-updated', carResponse);
+      }
+    }
+    
     // Obtener el carro actualizado sin datos binarios
     const updatedCar = await Car.findByPk(id, {
       attributes: { exclude: ['imageData'] },
@@ -343,6 +375,24 @@ router.put('/:id', async (req, res) => {
 
     await car.update(updateData);
     
+    // Emitir evento de carro actualizado a través de Socket.io
+    if (req.io) {
+      const updatedCar = await Car.findByPk(id, {
+        attributes: { exclude: ['imageData'] },
+        include: ['user']
+      });
+      
+      const carResponse = updatedCar.toJSON();
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-updated', carResponse);
+      
+      // Para el usuario específico dueño del carro
+      if (carResponse.userId) {
+        req.io.to(`user-${carResponse.userId}`).emit('car-updated', carResponse);
+      }
+    }
+    
     // No enviar los datos binarios en la respuesta
     const responseCar = car.toJSON();
     delete responseCar.imageData;
@@ -365,6 +415,22 @@ router.delete('/:id', async (req, res) => {
     
     if (!car) {
       return res.status(404).json({ error: 'Carro no encontrado' });
+    }
+    
+    // Emitir evento de carro eliminado a través de Socket.io
+    if (req.io) {
+      const carData = {
+        id: parseInt(id),
+        userId: car.userId
+      };
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-deleted', carData);
+      
+      // Para el usuario específico dueño del carro
+      if (car.userId) {
+        req.io.to(`user-${car.userId}`).emit('car-deleted', carData);
+      }
     }
     
     await car.destroy();
@@ -394,6 +460,24 @@ router.post('/:id/restore', async (req, res) => {
     
     await car.restore();
     
+    // Emitir evento de carro restaurado a través de Socket.io
+    if (req.io) {
+      const restoredCar = await Car.findByPk(id, {
+        attributes: { exclude: ['imageData'] },
+        include: ['user']
+      });
+      
+      const carResponse = restoredCar.toJSON();
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-created', carResponse);
+      
+      // Para el usuario específico dueño del carro
+      if (carResponse.userId) {
+        req.io.to(`user-${carResponse.userId}`).emit('car-created', carResponse);
+      }
+    }
+    
     // No enviar los datos binarios en la respuesta
     const responseCar = car.toJSON();
     delete responseCar.imageData;
@@ -416,6 +500,22 @@ router.delete('/:id/force', async (req, res) => {
     
     if (!car) {
       return res.status(404).json({ error: 'Carro no encontrado' });
+    }
+    
+    // Emitir evento de carro eliminado a través de Socket.io
+    if (req.io) {
+      const carData = {
+        id: parseInt(id),
+        userId: car.userId
+      };
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-deleted', carData);
+      
+      // Para el usuario específico dueño del carro
+      if (car.userId) {
+        req.io.to(`user-${car.userId}`).emit('car-deleted', carData);
+      }
     }
     
     await car.destroy({ force: true });
@@ -456,6 +556,22 @@ router.patch('/:id/delete', async (req, res) => {
         success: false,
         error: 'El carro ya está eliminado' 
       });
+    }
+
+    // Emitir evento de carro eliminado a través de Socket.io
+    if (req.io) {
+      const carData = {
+        id: parseInt(id),
+        userId: car.userId
+      };
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-deleted', carData);
+      
+      // Para el usuario específico dueño del carro
+      if (car.userId) {
+        req.io.to(`user-${car.userId}`).emit('car-deleted', carData);
+      }
     }
 
     // Realizar soft delete
@@ -506,6 +622,24 @@ router.patch('/:id/restore', async (req, res) => {
 
     // Restaurar el carro
     await car.restore();
+    
+    // Emitir evento de carro restaurado a través de Socket.io
+    if (req.io) {
+      const restoredCar = await Car.findByPk(id, {
+        attributes: { exclude: ['imageData'] },
+        include: ['user']
+      });
+      
+      const carResponse = restoredCar.toJSON();
+      
+      // Para admins (todos los carros)
+      req.io.to('admin-room').emit('car-created', carResponse);
+      
+      // Para el usuario específico dueño del carro
+      if (carResponse.userId) {
+        req.io.to(`user-${carResponse.userId}`).emit('car-created', carResponse);
+      }
+    }
     
     // No enviar los datos binarios en la respuesta
     const responseCar = car.toJSON();
