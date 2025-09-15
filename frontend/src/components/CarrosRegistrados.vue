@@ -173,12 +173,12 @@
             />
           </div>
 
-          <!-- Campo para editar user_id -->
+          <!-- Campo para editar user_id - CORREGIDO -->
           <div class="form-group">
             <label for="userId">Usuario ID:</label>
             <input
               id="userId"
-              v-model="editingCar.userId"
+              v-model.number="editingCar.userId"
               type="number"
               class="form-input"
               min="1"
@@ -321,7 +321,7 @@ async function fetchCars() {
   }
 }
 
-// Función para abrir modal de edición
+// Función para abrir modal de edición - CORREGIDA
 function openEditModal(car) {
   // Extraer coordenadas si existen
   let latitude = null
@@ -338,7 +338,7 @@ function openEditModal(car) {
     brand: car.brand,
     model: car.model,
     color: car.color,
-    userId: car.userId, // Añadido userId
+    userId: car.userId, // Aseguramos que userId esté presente
     latitude: latitude,
     longitude: longitude,
     imageData: null,
@@ -476,7 +476,7 @@ function removeImage() {
   if (fileInput) fileInput.value = ''
 }
 
-// Función para guardar cambios
+// Función para guardar cambios - CORREGIDA
 async function saveCarChanges() {
   saving.value = true
   try {
@@ -485,7 +485,7 @@ async function saveCarChanges() {
       brand: editingCar.value.brand,
       model: editingCar.value.model,
       color: editingCar.value.color,
-      userId: parseInt(editingCar.value.userId) // Añadido userId
+      userId: editingCar.value.userId // Aseguramos que userId se envíe
     }
 
     // Agregar ubicación si se proporciona
@@ -501,6 +501,9 @@ async function saveCarChanges() {
       updateData.imageSize = editingCar.value.imageSize
     }
 
+    // DEBUG: Mostrar datos que se enviarán
+    console.log('Datos a enviar:', updateData)
+
     const res = await fetch(`http://localhost:3000/api/carros/${editingCar.value.id}/edit`, {
       method: 'PATCH',
       headers: {
@@ -509,14 +512,15 @@ async function saveCarChanges() {
       body: JSON.stringify(updateData)
     })
 
-    const { success, error, message } = await res.json()
+    const data = await res.json()
+    console.log('Respuesta del servidor:', data)
     
-    if (success) {
-      alert(message || 'Carro actualizado exitosamente')
+    if (data.success) {
+      alert(data.message || 'Carro actualizado exitosamente')
       closeEditModal()
       await fetchCars()
     } else {
-      alert(error || 'No se pudo actualizar el carro')
+      alert(data.error || 'No se pudo actualizar el carro')
     }
   } catch (err) {
     console.error('Error al guardar:', err)

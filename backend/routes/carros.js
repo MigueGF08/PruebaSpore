@@ -180,6 +180,7 @@ router.patch('/:id/edit', async (req, res) => {
     }
 
     const { 
+      userId, // Añadido userId aquí
       licensePlate, 
       brand, 
       model, 
@@ -194,6 +195,17 @@ router.patch('/:id/edit', async (req, res) => {
 
     // Validaciones de campos
     const updateData = {};
+
+    // Validar y agregar userId al updateData
+    if (userId !== undefined) {
+      if (isNaN(parseInt(userId)) || parseInt(userId) <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'ID de usuario inválido. Debe ser un número positivo.'
+        });
+      }
+      updateData.userId = parseInt(userId);
+    }
     
     if (licensePlate !== undefined) {
       if (typeof licensePlate !== 'string' || licensePlate.trim().length === 0) {
@@ -339,14 +351,14 @@ router.patch('/:id/edit', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
+    const { userId, licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
     
     const car = await Car.findByPk(id);
     if (!car) {
       return res.status(404).json({ error: 'Carro no encontrado' });
     }
 
-    const updateData = { licensePlate, brand, model, color };
+    const updateData = { userId, licensePlate, brand, model, color }; // Añadido userId aquí
     
     // Actualizar imagen si se proporciona
     if (imageData !== undefined) {
