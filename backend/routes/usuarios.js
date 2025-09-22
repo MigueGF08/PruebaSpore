@@ -544,6 +544,108 @@ router.get('/:id/cars', async (req, res) => {
     });
   }
 });
+// PUT /api/users/:id/admin-update - Update user (admin version, no password required)
+router.put('/:id/admin-update', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, phone, role, isActive } = req.body;
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (role !== undefined) updateData.role = role;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
+    await user.update(updateData);
+
+    res.json({
+      success: true,
+      message: 'User updated successfully',
+      data: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        role: user.role,
+        isActive: user.isActive,
+        lastLogin: user.lastLogin
+      }
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(400).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// PUT /api/users/:id/admin-password - Admin reset password (no current password required)
+router.put('/:id/admin-password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: 'New password is required'
+      });
+    }
+
+    // Password strength validation
+    const errors = validatePasswordStrength(newPassword);
+    if (errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `New password must contain: ${errors.join(', ')}`,
+        details: errors
+      });
+    }
+
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Update password directly (admin privilege)
+    user.password = newPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully by admin'
+    });
+  } catch (error) {
+    console.error('Error changing password by admin:', error);
+    
+    // Manejar errores de validación de contraseña del modelo
+    if (error.message.includes('Password must contain')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
+    res.status(400).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
 
 // CORS handling
 router.options('*', (req, res) => {

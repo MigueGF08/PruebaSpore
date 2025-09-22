@@ -18,12 +18,12 @@
           </router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/carros-registrados" class="nav-link">
+          <router-link to="/CarrosRegistrados" class="nav-link">
             Carros Registrados
           </router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/usuarios-registrados" class="nav-link">
+          <router-link to="/UsuariosRegistrados" class="nav-link">
             Usuarios
           </router-link>
         </li>

@@ -29,10 +29,31 @@
         <main>
             <p>Agrega aquí tus carros</p>
             <form class="car-form" @submit.prevent="submitForm">
-                <!-- Campo para user_id agregado -->
+                <!-- Selector de usuarios -->
                 <div class="input-group">
-                    <label for="user-id">ID del Usuario:</label>
-                    <input id="user-id" type="text" v-model="userId" required />
+                    <label for="user-select">Seleccionar Usuario:</label>
+                    <select 
+                        id="user-select" 
+                        v-model="selectedUserId" 
+                        required
+                        class="user-select"
+                        :disabled="loadingUsers"
+                    >
+                        <option value="">-- Selecciona un usuario --</option>
+                        <option 
+                            v-for="user in users" 
+                            :key="user.id" 
+                            :value="user.id"
+                        >
+                            {{ getUserDisplayName(user) }} (ID: {{ user.id }})
+                        </option>
+                    </select>
+                    <div v-if="loadingUsers" class="loading-users">
+                        <small>Cargando usuarios...</small>
+                    </div>
+                    <div v-if="usersError" class="error-text">
+                        <small>Error al cargar usuarios: {{ usersError }}</small>
+                    </div>
                 </div>
                 
                 <div class="input-group">
@@ -78,7 +99,7 @@
                     </div>
                 </div>
                 
-                <button type="submit" :disabled="uploading">
+                <button type="submit" :disabled="uploading || loadingUsers">
                     {{ uploading ? 'Guardando...' : 'Agregar Carro' }}
                 </button>
             </form>
@@ -90,28 +111,63 @@
 import { ref, onMounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import Swal from 'sweetalert2'
 
-// Agregar userId al estado reactivo
-const userId = ref('')
+// Estado reactivo
+const selectedUserId = ref('')
 const carName = ref('')
 const carModel = ref('')
 const carPlates = ref('')
 const carColor = ref('')
-const carLat = ref(19.4326) // CDMX por defecto
+const carLat = ref(19.4326)
 const carLng = ref(-99.1332)
 const imageFile = ref(null)
 const imagePreview = ref(null)
 const uploading = ref(false)
+const loadingUsers = ref(false)
+const usersError = ref('')
 const fileInput = ref(null)
+const users = ref([])
 
 let map
 let marker
 
-onMounted(() => {
+// Función para obtener el nombre de visualización del usuario
+const getUserDisplayName = (user) => {
+    if (user.first_name && user.last_name) {
+        return `${user.first_name} ${user.last_name}`
+    } else if (user.firstName && user.lastName) {
+        return `${user.firstName} ${user.lastName}`
+    } else if (user.first_name) {
+        return user.first_name
+    } else if (user.firstName) {
+        return user.firstName
+    } else {
+        return 'Usuario sin nombre'
+    }
+}
+
+// Cargar usuarios al montar el componente
+onMounted(async () => {
+    await fetchUsers()
+    initMap()
+})
+
+// Inicializar mapa
+const initMap = () => {
     map = L.map('map').setView([carLat.value, carLng.value], 13)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map)
+    
+    // Solucionar problema con iconos de Leaflet
+    delete L.Icon.Default.prototype._getIconUrl
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    })
+    
     marker = L.marker([carLat.value, carLng.value], { draggable: true }).addTo(map)
 
     // Actualiza coordenadas al mover el marcador
@@ -126,15 +182,57 @@ onMounted(() => {
         carLat.value = e.latlng.lat.toFixed(6)
         carLng.value = e.latlng.lng.toFixed(6)
     })
-})
+}
+
+// Obtener lista de usuarios
+const fetchUsers = async () => {
+    loadingUsers.value = true
+    usersError.value = ''
+    try {
+        const response = await fetch('http://localhost:3000/api/usuarios')
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        console.log('Datos de usuarios recibidos:', data) // Para debugging
+        
+        if (data.success && data.data) {
+            users.value = data.data
+        } else if (data.success && Array.isArray(data)) {
+            // En caso de que la API devuelva directamente un array
+            users.value = data
+        } else {
+            throw new Error(data.error || 'Formato de datos incorrecto')
+        }
+    } catch (error) {
+        console.error('Error al cargar usuarios:', error)
+        usersError.value = error.message
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudieron cargar los usuarios: ' + error.message,
+            confirmButtonColor: '#e74c3c'
+        })
+    } finally {
+        loadingUsers.value = false
+    }
+}
 
 // Manejar la subida de imagen
-const handleImageUpload = (event) => {
+const handleImageUpload = async (event) => {
     const file = event.target.files[0]
     if (file) {
         // Validar tamaño (máximo 5MB)
         if (file.size > 5 * 1024 * 1024) {
-            alert('La imagen no debe exceder los 5MB')
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'La imagen no debe exceder los 5MB',
+                confirmButtonColor: '#e74c3c'
+            })
             fileInput.value.value = ''
             return
         }
@@ -142,7 +240,12 @@ const handleImageUpload = (event) => {
         // Validar tipo de archivo
         const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
         if (!validTypes.includes(file.type)) {
-            alert('Solo se permiten imágenes JPEG, PNG, GIF o WebP')
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Solo se permiten imágenes JPEG, PNG, GIF o WebP',
+                confirmButtonColor: '#e74c3c'
+            })
             fileInput.value.value = ''
             return
         }
@@ -171,7 +274,6 @@ const convertImageToBase64 = (file) => {
         const reader = new FileReader()
         reader.readAsDataURL(file)
         reader.onload = () => {
-            // Remover el prefijo data:image/... para obtener solo el base64
             const base64 = reader.result.split(',')[1]
             resolve(base64)
         }
@@ -183,9 +285,20 @@ const submitForm = async () => {
     try {
         uploading.value = true
         
-        // Usar el userId del campo del formulario en lugar del valor fijo
+        // Validar que se haya seleccionado un usuario
+        if (!selectedUserId.value) {
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Por favor selecciona un usuario',
+                confirmButtonColor: '#e74c3c'
+            })
+            uploading.value = false
+            return
+        }
+
         const carData = {
-            userId: userId.value,  // Cambiado: usar el valor del campo
+            userId: selectedUserId.value,
             licensePlate: carPlates.value,
             brand: carName.value,
             model: carModel.value,
@@ -207,7 +320,7 @@ const submitForm = async () => {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}` // Si usas autenticación
+                'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
             },
             body: JSON.stringify(carData)
         })
@@ -215,15 +328,29 @@ const submitForm = async () => {
         const data = await response.json()
 
         if (data.success) {
-            alert('Carro guardado correctamente')
-            // Limpia el formulario
+            await Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: 'Carro guardado correctamente',
+                confirmButtonColor: '#42b983'
+            })
             resetForm()
         } else {
-            alert('Error al guardar el carro: ' + (data.error || 'Error desconocido'))
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Error al guardar el carro: ' + (data.error || 'Error desconocido'),
+                confirmButtonColor: '#e74c3c'
+            })
         }
     } catch (error) {
         console.error('Error:', error)
-        alert('Error al guardar el carro')
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al guardar el carro: ' + error.message,
+            confirmButtonColor: '#e74c3c'
+        })
     } finally {
         uploading.value = false
     }
@@ -231,7 +358,7 @@ const submitForm = async () => {
 
 // Resetear formulario
 const resetForm = () => {
-    userId.value = ''  // Agregado: resetear el campo userId
+    selectedUserId.value = ''
     carName.value = ''
     carModel.value = ''
     carPlates.value = ''
@@ -243,15 +370,15 @@ const resetForm = () => {
     fileInput.value.value = ''
     
     // Resetear mapa
-    marker.setLatLng([19.4326, -99.1332])
-    map.setView([19.4326, -99.1332], 13)
+    if (marker && map) {
+        marker.setLatLng([19.4326, -99.1332])
+        map.setView([19.4326, -99.1332], 13)
+    }
 }
 
 // Función para cerrar sesión
 const logout = () => {
-    // Lógica para cerrar sesión
     console.log('Cerrando sesión...')
-    // Por ejemplo: limpiar token, redirigir, etc.
 }
 </script>
 
@@ -303,7 +430,6 @@ p {
     color: #555;
     font-size: 16px;
 }
-/* --- Estilos profesionales para el formulario --- */
 .car-form {
     background: #e8f5e9;
     border: 1px solid #b2dfdb;
@@ -323,7 +449,8 @@ p {
     color: #369870;
     font-weight: 600;
 }
-.input-group input {
+.input-group input,
+.input-group select {
     width: 100%;
     padding: 8px 10px;
     border: 1px solid #b2dfdb;
@@ -333,13 +460,27 @@ p {
     background: #fff;
     transition: border 0.2s;
 }
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
     border: 1.5px solid #42b983;
     outline: none;
     background: #f1f8e9;
 }
 .input-group input[type="file"] {
     padding: 6px;
+}
+.user-select {
+    cursor: pointer;
+}
+.loading-users {
+    margin-top: 5px;
+    color: #666;
+    font-style: italic;
+}
+.error-text {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 5px;
 }
 .car-form button[type="submit"] {
     width: 100%;
@@ -377,7 +518,6 @@ p {
     color: #369870;
     margin-top: 6px;
 }
-/* Estilos para la imagen */
 .image-preview {
     position: relative;
     margin-top: 10px;

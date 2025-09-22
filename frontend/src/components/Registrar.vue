@@ -1,7 +1,41 @@
 <template>
   <div class="principal">
     <!-- Navbar -->
-   
+    <nav class="navbar">
+      <ul>
+        <li>
+          <router-link to="/principal" class="nav-link" exact>
+            Principal
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/mis-carros" class="nav-link">
+            Mis Carros
+          </router-link>
+        </li>
+        <li>  
+          <router-link to="/agregar-carro" class="nav-link">
+            Agregar Carros
+          </router-link>
+        </li>
+      
+        <li>
+          <router-link to="/CarrosRegistrados" class="nav-link">
+            Carros Registrados
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/UsuariosRegistrados" class="nav-link">
+            Usuarios
+          </router-link>
+        </li>
+          <li>
+          <router-link to="/" class="nav-link" @click.native="logout">
+            Cerrar Sesión
+          </router-link>
+        </li>
+      </ul>
+    </nav>
 
     <!-- Contenido principal -->
     <header>
@@ -64,9 +98,6 @@
         <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
       </div>
 
-      <!-- Role -->
-
-
       <!-- Password -->
       <div class="form-group">
         <label for="password">Password *</label>
@@ -109,15 +140,6 @@
       </button>
     </form>
 
-    <!-- Mensajes de alerta -->
-    <div v-if="errorMessage" class="alert error">
-      <strong>Error:</strong> {{ errorMessage }}
-    </div>
-    
-    <div v-if="successMessage" class="alert success">
-      <strong>Success:</strong> {{ successMessage }}
-    </div>
-
     <p class="login-link">
       Already have an account? <router-link to="/">Login here</router-link>
     </p>
@@ -127,14 +149,13 @@
 <script>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
 export default {
   name: 'RegisterView',
   setup() {
     const router = useRouter()
     const loading = ref(false)
-    const errorMessage = ref('')
-    const successMessage = ref('')
 
     const user = reactive({
       firstName: '',
@@ -214,12 +235,17 @@ export default {
 
     const handleRegister = async () => {
       if (!validateForm()) {
+        // Mostrar alerta de error de validación
+        Swal.fire({
+          icon: 'error',
+          title: 'Validation Error',
+          text: 'Please correct the errors in the form',
+          confirmButtonColor: '#e74c3c'
+        })
         return
       }
 
       loading.value = true
-      errorMessage.value = ''
-      successMessage.value = ''
 
       try {
         const response = await fetch('http://localhost:3000/api/usuarios/register', {
@@ -239,7 +265,15 @@ export default {
         const data = await response.json()
 
         if (data.success) {
-          successMessage.value = data.message || 'User registered successfully'
+          // Mostrar alerta de éxito
+          await Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: data.message || 'User registered successfully',
+            confirmButtonColor: '#42b983',
+            timer: 2000,
+            showConfirmButton: false
+          })
           
           // Limpiar formulario
           user.firstName = ''
@@ -249,15 +283,25 @@ export default {
           user.password = ''
           user.confirmPassword = ''
           
-          // Redirigir después de 2 segundos
-          setTimeout(() => {
-            router.push('/')
-          }, 2000)
+          // Redirigir al login
+          router.push('/')
         } else {
-          errorMessage.value = data.error || data.message || 'Error registering user'
+          // Mostrar alerta de error del servidor
+          await Swal.fire({
+            icon: 'error',
+            title: 'Registration Failed',
+            text: data.error || data.message || 'Error registering user',
+            confirmButtonColor: '#e74c3c'
+          })
         }
       } catch (error) {
-        errorMessage.value = 'Connection error. Please check if the server is running.'
+        // Mostrar alerta de error de conexión
+        await Swal.fire({
+          icon: 'error',
+          title: 'Connection Error',
+          text: 'Please check if the server is running',
+          confirmButtonColor: '#e74c3c'
+        })
         console.error('Registration error:', error)
       } finally {
         loading.value = false
@@ -268,8 +312,6 @@ export default {
       user,
       errors,
       loading,
-      errorMessage,
-      successMessage,
       handleRegister
     }
   }
@@ -421,25 +463,5 @@ input:focus {
 
 .login-link a:hover {
   text-decoration: underline;
-}
-
-.alert {
-  padding: 0.8rem;
-  border-radius: 8px;
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-.error {
-  background-color: #fee;
-  color: #c33;
-  border: 1px solid #fcc;
-}
-
-.success {
-  background-color: #efe;
-  color: #363;
-  border: 1px solid #cfc;
 }
 </style>

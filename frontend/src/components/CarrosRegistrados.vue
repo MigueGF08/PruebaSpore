@@ -49,12 +49,20 @@
           :key="car.id"
           class="car-card"
         >
-          <img
-            v-if="car.imageData"
-            :src="`data:${car.imageType};base64,${car.imageData}`"
-            :alt="car.brand + ' ' + car.model"
-            class="car-image"
-          />
+          <!-- Imagen del carro - MODIFICADO -->
+          <div class="car-image-container">
+            <img
+              v-if="hasImage(car)"
+              :src="getImageUrl(car)"
+              :alt="car.brand + ' ' + car.model"
+              class="car-image"
+              @error="handleImageError"
+            />
+            <div v-else class="no-image">
+              <span>🚗</span>
+              <p>Sin imagen</p>
+            </div>
+          </div>
           <div class="car-details">
             <p><strong>ID:</strong> {{ car.id }}</p>
             <p><strong>Marca:</strong> {{ car.brand }}</p>
@@ -92,12 +100,20 @@
           :key="car.id"
           class="car-card deleted"
         >
-          <img
-            v-if="car.imageData"
-            :src="`data:${car.imageType};base64,${car.imageData}`"
-            :alt="car.brand + ' ' + car.model"
-            class="car-image"
-          />
+          <!-- Imagen del carro - MODIFICADO -->
+          <div class="car-image-container">
+            <img
+              v-if="hasImage(car)"
+              :src="getImageUrl(car)"
+              :alt="car.brand + ' ' + car.model"
+              class="car-image"
+              @error="handleImageError"
+            />
+            <div v-else class="no-image">
+              <span>🚗</span>
+              <p>Sin imagen</p>
+            </div>
+          </div>
           <div class="car-details">
             <p><strong>ID:</strong> {{ car.id }}</p>
             <p><strong>Marca:</strong> {{ car.brand }}</p>
@@ -173,7 +189,7 @@
             />
           </div>
 
-          <!-- Campo para editar user_id - CORREGIDO -->
+          <!-- Campo para editar user_id -->
           <div class="form-group">
             <label for="userId">Usuario ID:</label>
             <input
@@ -257,6 +273,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
 // Importar Leaflet
 import L from 'leaflet'
@@ -290,6 +307,62 @@ const activeCars = computed(() => {
   return cars.value.filter(car => !car.deletedAt)
 })
 
+// Función para verificar si un carro tiene imagen
+const hasImage = (car) => {
+  return car.imageData || (car.image && car.image.data);
+}
+
+// Función para obtener la URL de la imagen
+const getImageUrl = (car) => {
+  try {
+    // Si ya tenemos imageData (base64 string)
+    if (car.imageData) {
+      return `data:${car.imageType || 'image/jpeg'};base64,${car.imageData}`;
+    }
+    
+    // Si tenemos un objeto image con data
+    if (car.image && car.image.data) {
+      // Verificar si ya es una data URL
+      if (typeof car.image.data === 'string' && car.image.data.startsWith('data:')) {
+        return car.image.data;
+      }
+      
+      // Si es un objeto Buffer o similar
+      if (car.image.data && car.image.data.data) {
+        // Convertir array de bytes a base64
+        const base64 = btoa(
+          new Uint8Array(car.image.data.data)
+            .reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        return `data:${car.image.type || 'image/jpeg'};base64,${base64}`;
+      }
+      
+      // Si es un string base64 directo
+      if (typeof car.image.data === 'string') {
+        return `data:${car.image.type || 'image/jpeg'};base64,${car.image.data}`;
+      }
+    }
+    
+    return '';
+  } catch (error) {
+    console.error('Error procesando imagen:', error, car);
+    return '';
+  }
+}
+
+// Manejar errores de carga de imágenes
+const handleImageError = (event) => {
+  console.warn('Error cargando imagen, mostrando placeholder');
+  event.target.style.display = 'none';
+  const container = event.target.parentElement;
+  const noImageDiv = container.querySelector('.no-image') || document.createElement('div');
+  noImageDiv.className = 'no-image';
+  noImageDiv.innerHTML = '<span>🚗</span><p>Sin imagen</p>';
+  if (!container.querySelector('.no-image')) {
+    container.appendChild(noImageDiv);
+  }
+}
+
 // Función para obtener todos los carros
 async function fetchCars() {
   loading.value = true
@@ -305,23 +378,25 @@ async function fetchCars() {
     
     if (activeData.success) {
       cars.value = activeData.data
+      console.log('Carros activos cargados:', cars.value)
     } else {
       errorMessage.value = activeData.error || 'No se pudieron cargar los carros activos'
     }
     
     if (deletedData.success) {
       deletedCars.value = deletedData.data
+      console.log('Carros eliminados cargados:', deletedCars.value)
     }
     
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener carros'
-    console.error(err)
+    console.error('Error fetching cars:', err)
   } finally {
     loading.value = false
   }
 }
 
-// Función para abrir modal de edición - CORREGIDA
+// Función para abrir modal de edición
 function openEditModal(car) {
   // Extraer coordenadas si existen
   let latitude = null
@@ -338,7 +413,7 @@ function openEditModal(car) {
     brand: car.brand,
     model: car.model,
     color: car.color,
-    userId: car.userId, // Aseguramos que userId esté presente
+    userId: car.userId,
     latitude: latitude,
     longitude: longitude,
     imageData: null,
@@ -476,7 +551,7 @@ function removeImage() {
   if (fileInput) fileInput.value = ''
 }
 
-// Función para guardar cambios - CORREGIDA
+// Función para guardar cambios
 async function saveCarChanges() {
   saving.value = true
   try {
@@ -485,7 +560,7 @@ async function saveCarChanges() {
       brand: editingCar.value.brand,
       model: editingCar.value.model,
       color: editingCar.value.color,
-      userId: editingCar.value.userId // Aseguramos que userId se envíe
+      userId: editingCar.value.userId
     }
 
     // Agregar ubicación si se proporciona
@@ -501,9 +576,6 @@ async function saveCarChanges() {
       updateData.imageSize = editingCar.value.imageSize
     }
 
-    // DEBUG: Mostrar datos que se enviarán
-    console.log('Datos a enviar:', updateData)
-
     const res = await fetch(`http://localhost:3000/api/carros/${editingCar.value.id}/edit`, {
       method: 'PATCH',
       headers: {
@@ -513,18 +585,32 @@ async function saveCarChanges() {
     })
 
     const data = await res.json()
-    console.log('Respuesta del servidor:', data)
     
     if (data.success) {
-      alert(data.message || 'Carro actualizado exitosamente')
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: data.message || 'Carro actualizado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
       closeEditModal()
       await fetchCars()
     } else {
-      alert(data.error || 'No se pudo actualizar el carro')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: data.error || 'No se pudo actualizar el carro',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al guardar:', err)
-    alert('Error de conexión al guardar los cambios')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para guardar los cambios',
+      confirmButtonColor: '#e74c3c'
+    })
   } finally {
     saving.value = false
   }
@@ -532,7 +618,18 @@ async function saveCarChanges() {
 
 // Función para eliminar carro
 async function deleteCar(id) {
-  if (!confirm('¿Seguro que quieres eliminar este carro?')) return
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "Esta acción eliminará el carro. ¿Deseas continuar?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#e74c3c',
+    cancelButtonColor: '#95a5a6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  })
+  
+  if (!result.isConfirmed) return
 
   try {
     const res = await fetch(`http://localhost:3000/api/carros/${id}`, {
@@ -545,20 +642,46 @@ async function deleteCar(id) {
     
     const { success, error } = await res.json()
     if (success) {
-      alert('Carro eliminado exitosamente')
-      await fetchCars() // Recargar ambas listas
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Eliminado!',
+        text: 'Carro eliminado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      await fetchCars()
     } else {
-      alert(error || 'No se pudo eliminar el carro')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error || 'No se pudo eliminar el carro',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al eliminar:', err)
-    alert('Error de conexión al eliminar el carro')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para eliminar el carro',
+      confirmButtonColor: '#e74c3c'
+    })
   }
 }
 
 // Función para restaurar carro
 async function restoreCar(id) {
-  if (!confirm('¿Deseas restaurar este carro?')) return
+  const result = await Swal.fire({
+    title: '¿Restaurar carro?',
+    text: "¿Deseas restaurar este carro?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3498db',
+    cancelButtonColor: '#95a5a6',
+    confirmButtonText: 'Sí, restaurar',
+    cancelButtonText: 'Cancelar'
+  })
+  
+  if (!result.isConfirmed) return
 
   try {
     const res = await fetch(`http://localhost:3000/api/carros/${id}/restore`, {
@@ -567,14 +690,29 @@ async function restoreCar(id) {
     
     const { success, error, message } = await res.json()
     if (success) {
-      alert(message || 'Carro restaurado exitosamente')
-      await fetchCars() // Recargar ambas listas
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Restaurado!',
+        text: message || 'Carro restaurado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      await fetchCars()
     } else {
-      alert(error || 'No se pudo restaurar el carro')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error || 'No se pudo restaurar el carro',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al restaurar:', err)
-    alert('Error de conexión al restaurar el carro')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para restaurar el carro',
+      confirmButtonColor: '#e74c3c'
+    })
   }
 }
 
@@ -593,7 +731,6 @@ function formatDate(dateString) {
 
 // Función para cerrar sesión
 function logout() {
-  // Aquí puedes agregar lógica de logout si es necesario
   console.log('Cerrando sesión...')
 }
 
@@ -655,16 +792,6 @@ onUnmounted(() => {
   background: #369870;
 }
 
-header h1 {
-  margin-bottom: 16px;
-  color: #333;
-}
-
-p {
-  color: #555;
-  font-size: 16px;
-}
-
 /* --------- Carros Registrados ---------- */
 .carros-registrados,
 .carros-eliminados {
@@ -693,11 +820,15 @@ p {
 .error-text {
   color: #c33;
   margin-bottom: 16px;
+  padding: 10px;
+  background-color: #ffe6e6;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .car-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -710,6 +841,7 @@ p {
   flex-direction: column;
   align-items: center;
   transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .car-card:hover {
@@ -722,19 +854,48 @@ p {
   border-left: 4px solid #e74c3c;
 }
 
+/* Contenedor de imagen */
+.car-image-container {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  overflow: hidden;
+  position: relative;
+}
+
 .car-image {
   width: 100%;
-  height: 160px;
+  height: 100%;
   object-fit: cover;
 }
 
+.no-image {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.no-image span {
+  font-size: 40px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.no-image p {
+  margin: 0;
+  font-size: 12px;
+}
+
 .car-details {
-  padding: 12px;
+  padding: 16px;
   width: 100%;
 }
 
 .car-details p {
-  margin: 6px 0;
+  margin: 8px 0;
   font-size: 14px;
   color: #333;
 }
@@ -743,8 +904,10 @@ p {
   display: flex;
   width: 100%;
   justify-content: space-around;
-  padding: 12px;
+  padding: 16px;
   border-top: 1px solid #eceeef;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .edit-btn,
@@ -755,7 +918,8 @@ p {
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
+  font-weight: 600;
 }
 
 .edit-btn {
@@ -765,6 +929,7 @@ p {
 
 .edit-btn:hover {
   background: #369870;
+  transform: translateY(-2px);
 }
 
 .delete-btn {
@@ -774,6 +939,7 @@ p {
 
 .delete-btn:hover {
   background: #c0392b;
+  transform: translateY(-2px);
 }
 
 .restore-btn {
@@ -783,6 +949,7 @@ p {
 
 .restore-btn:hover {
   background: #2980b9;
+  transform: translateY(-2px);
 }
 
 /* --------- Modal de Edición ---------- */
@@ -801,9 +968,9 @@ p {
 
 .modal-content {
   background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 500px;
   max-height: 95vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -834,40 +1001,50 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
 }
 
 .close-btn:hover {
   color: #333;
+  background: #f0f0f0;
 }
 
 .edit-form {
   padding: 20px;
 }
 
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
 .form-group {
+  flex: 1;
   margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: bold;
-  color: #333;
+  color: #555;
 }
 
 .form-input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 16px;
   box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #42b983;
-  box-shadow: 0 0 5px rgba(66, 185, 131, 0.3);
+  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
 
 .form-help {
@@ -969,11 +1146,13 @@ p {
 
 .cancel-btn,
 .save-btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .cancel-btn {
@@ -983,6 +1162,7 @@ p {
 
 .cancel-btn:hover {
   background: #7f8c8d;
+  transform: translateY(-2px);
 }
 
 .save-btn {
@@ -992,11 +1172,13 @@ p {
 
 .save-btn:hover:not(:disabled) {
   background: #369870;
+  transform: translateY(-2px);
 }
 
 .save-btn:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Estilos para el mapa de Leaflet */
@@ -1015,15 +1197,33 @@ p {
   
   .navbar li {
     margin: 5px 0;
+    width: 100%;
+  }
+  
+  .nav-link {
+    text-align: center;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 10px;
   }
   
   .coordinates-inputs {
     grid-template-columns: 1fr;
   }
   
-  .modal-content {
-    width: 95%;
-    margin: 10px;
+  .car-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .car-image-container {
+    height: 160px;
   }
 }
 </style>

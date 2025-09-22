@@ -36,6 +36,13 @@
       </ul>
     </nav>
 
+    <!-- Botón para abrir modal de registro -->
+    <div class="add-user-btn-container">
+      <button @click="openRegisterModal" class="add-user-btn">
+        + Agregar Nuevo Usuario
+      </button>
+    </div>
+
     <!-- Sección de Usuarios Registrados -->
     <section class="usuarios-registrados">
       <h2>Usuarios Registrados</h2>
@@ -64,19 +71,13 @@
           class="user-card"
         >
           <div class="user-avatar">
-            <img
-              v-if="user.avatarData"
-              :src="`data:${user.avatarType};base64,${user.avatarData}`"
-              :alt="user.name"
-              class="avatar-image"
-            />
-            <span v-else>👤</span>
+            <span>👤</span>
           </div>
           <div class="user-details">
-            <p><strong>ID:</strong> {{ user.id }}</p> <!-- Añadido ID -->
-            <p><strong>Nombre:</strong> {{ user.name }}</p>
+            <p><strong>ID:</strong> {{ user.id }}</p>
+            <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Teléfono:</strong> {{ user.phone }}</p>
+            <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
             <p><strong>Rol:</strong> {{ user.role }}</p>
           </div>
           <div class="user-actions">
@@ -85,6 +86,12 @@
               class="edit-btn"
             >
               Editar
+            </button>
+            <button
+              @click="openResetPasswordModal(user)"
+              class="reset-password-btn"
+            >
+              Rest. Pass
             </button>
             <button
               @click="deleteUser(user.id)"
@@ -127,19 +134,13 @@
           class="user-card deleted"
         >
           <div class="user-avatar">
-            <img
-              v-if="user.avatarData"
-              :src="`data:${user.avatarType};base64,${user.avatarData}`"
-              :alt="user.name"
-              class="avatar-image"
-            />
-            <span v-else>👤</span>
+            <span>👤</span>
           </div>
           <div class="user-details">
-            <p><strong>ID:</strong> {{ user.id }}</p> <!-- Añadido ID -->
-            <p><strong>Nombre:</strong> {{ user.first_name }}</p>
+            <p><strong>ID:</strong> {{ user.id }}</p>
+            <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Teléfono:</strong> {{ user.phone }}</p>
+            <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
             <p><strong>Rol:</strong> {{ user.role }}</p>
             <p><strong>Eliminado el:</strong> {{ formatDate(user.deletedAt) }}</p>
           </div>
@@ -160,31 +161,44 @@
       </div>
     </section>
 
-    <!-- Modal de Edición -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+    <!-- Modal de Registro -->
+    <div v-if="showRegisterModal" class="modal-overlay" @click="closeRegisterModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h3>Editar Usuario (ID: {{ editingUser.id }})</h3> <!-- Añadido ID en el modal -->
-          <button @click="closeEditModal" class="close-btn">&times;</button>
+          <h3>Registrar Nuevo Usuario</h3>
+          <button @click="closeRegisterModal" class="close-btn">&times;</button>
         </div>
         
-        <form @submit.prevent="saveUserChanges" class="edit-form">
-          <div class="form-group">
-            <label for="name">Nombre:</label>
-            <input
-              id="name"
-              v-model="editingUser.name"
-              type="text"
-              class="form-input"
-              required
-            />
+        <form @submit.prevent="createNewUser" class="edit-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">Nombre:</label>
+              <input
+                id="firstName"
+                v-model="newUser.firstName"
+                type="text"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="lastName">Apellido:</label>
+              <input
+                id="lastName"
+                v-model="newUser.lastName"
+                type="text"
+                class="form-input"
+                required
+              />
+            </div>
           </div>
 
           <div class="form-group">
             <label for="email">Email:</label>
             <input
               id="email"
-              v-model="editingUser.email"
+              v-model="newUser.email"
               type="email"
               class="form-input"
               required
@@ -195,9 +209,20 @@
             <label for="phone">Teléfono:</label>
             <input
               id="phone"
-              v-model="editingUser.phone"
+              v-model="newUser.phone"
               type="tel"
               class="form-input"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input
+              id="password"
+              v-model="newUser.password"
+              type="password"
+              class="form-input"
+              required
             />
           </div>
 
@@ -205,7 +230,7 @@
             <label for="role">Rol:</label>
             <select
               id="role"
-              v-model="editingUser.role"
+              v-model="newUser.role"
               class="form-input"
               required
             >
@@ -214,21 +239,83 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="avatar">Avatar:</label>
-            <input
-              id="avatar"
-              type="file"
-              accept="image/*"
-              @change="handleAvatarChange"
-              class="form-input"
-            />
-            <div v-if="editingUser.avatarPreview" class="image-preview">
-              <img :src="editingUser.avatarPreview" alt="Preview" class="preview-img" />
-              <button type="button" @click="removeAvatar" class="remove-img-btn">
-                Eliminar imagen
-              </button>
+          <div class="form-actions">
+            <button type="button" @click="closeRegisterModal" class="cancel-btn">
+              Cancelar
+            </button>
+            <button type="submit" class="save-btn" :disabled="creatingUser">
+              {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Editar Usuario (ID: {{ editingUser.id }})</h3>
+          <button @click="closeEditModal" class="close-btn">&times;</button>
+        </div>
+        
+        <form @submit.prevent="saveUserChanges" class="edit-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editFirstName">Nombre:</label>
+              <input
+                id="editFirstName"
+                v-model="editingUser.firstName"
+                type="text"
+                class="form-input"
+                required
+              />
             </div>
+
+            <div class="form-group">
+              <label for="editLastName">Apellido:</label>
+              <input
+                id="editLastName"
+                v-model="editingUser.lastName"
+                type="text"
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="editEmail">Email:</label>
+            <input
+              id="editEmail"
+              v-model="editingUser.email"
+              type="email"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="editPhone">Teléfono:</label>
+              <input
+                id="editPhone"
+                v-model="editingUser.phone"
+                type="tel"
+                class="form-input"
+              />
+          </div>
+
+          <div class="form-group">
+            <label for="editRole">Rol:</label>
+            <select
+              id="editRole"
+              v-model="editingUser.role"
+              class="form-input"
+              required
+            >
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
 
           <div class="form-actions">
@@ -242,12 +329,57 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal de Restablecer Contraseña -->
+    <div v-if="showResetPasswordModal" class="modal-overlay" @click="closeResetPasswordModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Restablecer Contraseña (Usuario: {{ resetPasswordUser.first_name || resetPasswordUser.firstName }} {{ resetPasswordUser.last_name || resetPasswordUser.lastName }})</h3>
+          <button @click="closeResetPasswordModal" class="close-btn">&times;</button>
+        </div>
+        
+        <form @submit.prevent="resetPassword" class="edit-form">
+          <div class="form-group">
+            <label for="newPassword">Nueva Contraseña:</label>
+            <input
+              id="newPassword"
+              v-model="resetPasswordData.newPassword"
+              type="password"
+              class="form-input"
+              required
+              placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Confirmar Contraseña:</label>
+            <input
+              id="confirmPassword"
+              v-model="resetPasswordData.confirmPassword"
+              type="password"
+              class="form-input"
+              required
+            />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="closeResetPasswordModal" class="cancel-btn">
+              Cancelar
+            </button>
+            <button type="submit" class="save-btn" :disabled="resettingPassword">
+              {{ resettingPassword ? 'Restableciendo...' : 'Restablecer Contraseña' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import Swal from 'sweetalert2'
 
 const users = ref([])
 const deletedUsers = ref([])
@@ -255,10 +387,31 @@ const loading = ref(false)
 const errorMessage = ref('')
 const router = useRouter()
 
+// Estados para nuevo usuario
+const newUser = ref({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  password: '',
+  role: 'user'
+})
+const creatingUser = ref(false)
+const showRegisterModal = ref(false)
+
 // Estados del modal de edición
 const showEditModal = ref(false)
 const editingUser = ref({})
 const saving = ref(false)
+
+// Estados para restablecer contraseña
+const showResetPasswordModal = ref(false)
+const resetPasswordUser = ref({})
+const resetPasswordData = ref({
+  newPassword: '',
+  confirmPassword: ''
+})
+const resettingPassword = ref(false)
 
 // Estados para búsqueda
 const searchQuery = ref('')
@@ -275,10 +428,11 @@ const filteredActiveUsers = computed(() => {
   
   const query = searchQuery.value.toLowerCase()
   return activeUsers.value.filter(user => {
+    const userName = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase();
     return (
-      (user.name && user.name.toLowerCase().includes(query)) ||
+      (userName && userName.includes(query)) ||
       (user.email && user.email.toLowerCase().includes(query)) ||
-      (user.phone && user.phone.toLowerCase().includes(query)) ||
+      (user.phone && user.phone && user.phone.toLowerCase().includes(query)) ||
       (user.id && user.id.toString().includes(query))
     )
   })
@@ -290,10 +444,11 @@ const filteredDeletedUsers = computed(() => {
   
   const query = searchDeletedQuery.value.toLowerCase()
   return deletedUsers.value.filter(user => {
+    const userName = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase();
     return (
-      (user.name && user.name.toLowerCase().includes(query)) ||
+      (userName && userName.includes(query)) ||
       (user.email && user.email.toLowerCase().includes(query)) ||
-      (user.phone && user.phone.toLowerCase().includes(query)) ||
+      (user.phone && user.phone && user.phone.toLowerCase().includes(query)) ||
       (user.id && user.id.toString().includes(query))
     )
   })
@@ -306,14 +461,19 @@ async function fetchUsers() {
   try {
     // Obtener usuarios activos
     const activeRes = await fetch('http://localhost:3000/api/usuarios')
+    if (!activeRes.ok) throw new Error('Error al obtener usuarios activos')
+    
     const activeData = await activeRes.json()
     
     // Obtener usuarios eliminados
     const deletedRes = await fetch('http://localhost:3000/api/usuarios/deleted')
+    if (!deletedRes.ok) throw new Error('Error al obtener usuarios eliminados')
+    
     const deletedData = await deletedRes.json()
     
     if (activeData.success) {
       users.value = activeData.data
+      console.log('Usuarios cargados:', users.value) // Para debug
     } else {
       errorMessage.value = activeData.error || 'No se pudieron cargar los usuarios activos'
     }
@@ -324,16 +484,168 @@ async function fetchUsers() {
     
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener usuarios'
-    console.error(err)
+    console.error('Error fetching users:', err)
   } finally {
     loading.value = false
+  }
+}
+
+// Función para abrir modal de registro
+function openRegisterModal() {
+  resetNewUserForm()
+  showRegisterModal.value = true
+}
+
+// Función para cerrar modal de registro
+function closeRegisterModal() {
+  showRegisterModal.value = false
+  resetNewUserForm()
+}
+
+// Función para resetear el formulario de nuevo usuario
+function resetNewUserForm() {
+  newUser.value = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    role: 'user'
+  }
+}
+
+// Función para crear un nuevo usuario
+async function createNewUser() {
+  creatingUser.value = true
+  try {
+    const userData = {
+      firstName: newUser.value.firstName,
+      lastName: newUser.value.lastName,
+      email: newUser.value.email,
+      phone: newUser.value.phone,
+      password: newUser.value.password,
+      role: newUser.value.role
+    }
+
+    const res = await fetch('http://localhost:3000/api/usuarios/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    })
+
+    const responseData = await res.json()
+    
+    if (responseData.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: responseData.message || 'Usuario creado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      closeRegisterModal()
+      await fetchUsers()
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: responseData.error || 'No se pudo crear el usuario',
+        confirmButtonColor: '#e74c3c'
+      })
+    }
+  } catch (err) {
+    console.error('Error al crear usuario:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para crear el usuario',
+      confirmButtonColor: '#e74c3c'
+    })
+  } finally {
+    creatingUser.value = false
+  }
+}
+
+// Función para abrir modal de restablecer contraseña
+function openResetPasswordModal(user) {
+  resetPasswordUser.value = user
+  resetPasswordData.value = {
+    newPassword: '',
+    confirmPassword: ''
+  }
+  showResetPasswordModal.value = true
+}
+
+// Función para cerrar modal de restablecer contraseña
+function closeResetPasswordModal() {
+  showResetPasswordModal.value = false
+  resetPasswordUser.value = {}
+  resetPasswordData.value = {
+    newPassword: '',
+    confirmPassword: ''
+  }
+}
+
+// Función para restablecer contraseña
+async function resetPassword() {
+  if (resetPasswordData.value.newPassword !== resetPasswordData.value.confirmPassword) {
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Las contraseñas no coinciden',
+      confirmButtonColor: '#e74c3c'
+    })
+    return
+  }
+
+  resettingPassword.value = true
+  try {
+    // Usar el endpoint de administrador para restablecer contraseña
+    const res = await fetch(`http://localhost:3000/api/usuarios/${resetPasswordUser.value.id}/admin-password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        newPassword: resetPasswordData.value.newPassword
+      })
+    })
+
+    const responseData = await res.json()
+    
+    if (responseData.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: responseData.message || 'Contraseña restablecida exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      closeResetPasswordModal()
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: responseData.error || 'No se pudo restablecer la contraseña',
+        confirmButtonColor: '#e74c3c'
+      })
+    }
+  } catch (err) {
+    console.error('Error al restablecer contraseña:', err)
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para restablecer la contraseña',
+      confirmButtonColor: '#e74c3c'
+    })
+  } finally {
+    resettingPassword.value = false
   }
 }
 
 // Función para manejar búsqueda
 function handleSearch() {
   // Puedes agregar lógica adicional aquí si necesitas
-  // como un debounce para búsquedas con muchas coincidencias
 }
 
 // Función para limpiar búsqueda
@@ -343,50 +655,23 @@ function clearSearch() {
 
 // Función para abrir modal de edición
 function openEditModal(user) {
+  // Asegurarnos de que estamos usando los nombres correctos
   editingUser.value = {
     id: user.id,
-    name: user.name,
+    firstName: user.first_name || user.firstName,
+    lastName: user.last_name || user.lastName,
     email: user.email,
-    phone: user.phone,
-    role: user.role,
-    avatarData: null,
-    avatarPreview: user.avatarData ? `data:${user.avatarType};base64,${user.avatarData}` : null
+    phone: user.phone || '',
+    role: user.role
   }
   
   showEditModal.value = true
 }
 
-// Función para cerrar modal
+// Función para cerrar modal de edición
 function closeEditModal() {
   showEditModal.value = false
   editingUser.value = {}
-}
-
-// Función para manejar cambio de avatar
-function handleAvatarChange(event) {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      editingUser.value.avatarPreview = e.target.result
-      editingUser.value.avatarData = e.target.result.split(',')[1]
-      editingUser.value.avatarName = file.name
-      editingUser.value.avatarType = file.type
-      editingUser.value.avatarSize = file.size
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-// Función para remover avatar
-function removeAvatar() {
-  editingUser.value.avatarData = null
-  editingUser.value.avatarPreview = null
-  editingUser.value.avatarName = null
-  editingUser.value.avatarType = null
-  editingUser.value.avatarSize = null
-  const fileInput = document.getElementById('avatar')
-  if (fileInput) fileInput.value = ''
 }
 
 // Función para guardar cambios
@@ -394,39 +679,48 @@ async function saveUserChanges() {
   saving.value = true
   try {
     const updateData = {
-      name: editingUser.value.name,
+      firstName: editingUser.value.firstName,
+      lastName: editingUser.value.lastName,
       email: editingUser.value.email,
       phone: editingUser.value.phone,
       role: editingUser.value.role
     }
 
-    if (editingUser.value.avatarData !== null) {
-      updateData.avatarData = editingUser.value.avatarData
-      updateData.avatarName = editingUser.value.avatarName
-      updateData.avatarType = editingUser.value.avatarType
-      updateData.avatarSize = editingUser.value.avatarSize
-    }
-
-    const res = await fetch(`http://localhost:3000/api/usuarios/${editingUser.value.id}/edit`, {
-      method: 'PATCH',
+    const res = await fetch(`http://localhost:3000/api/usuarios/${editingUser.value.id}/admin-update`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(updateData)
     })
 
-    const { success, error, message } = await res.json()
+    const responseData = await res.json()
     
-    if (success) {
-      alert(message || 'Usuario actualizado exitosamente')
+    if (responseData.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Éxito!',
+        text: responseData.message || 'Usuario actualizado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
       closeEditModal()
       await fetchUsers()
     } else {
-      alert(error || 'No se pudo actualizar el usuario')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: responseData.error || 'No se pudo actualizar el usuario',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al guardar:', err)
-    alert('Error de conexión al guardar los cambios')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para guardar los cambios',
+      confirmButtonColor: '#e74c3c'
+    })
   } finally {
     saving.value = false
   }
@@ -434,49 +728,99 @@ async function saveUserChanges() {
 
 // Función para eliminar usuario
 async function deleteUser(id) {
-  if (!confirm('¿Seguro que quieres eliminar este usuario?')) return
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "Esta acción eliminará al usuario. ¿Deseas continuar?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#e74c3c',
+    cancelButtonColor: '#95a5a6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar'
+  })
+  
+  if (!result.isConfirmed) return
 
   try {
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
       method: 'DELETE'
     })
     
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`)
-    }
+    const responseData = await res.json()
     
-    const { success, error } = await res.json()
-    if (success) {
-      alert('Usuario eliminado exitosamente')
-      await fetchUsers() // Recargar ambas listas
+    if (responseData.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Eliminado!',
+        text: 'Usuario eliminado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      await fetchUsers()
     } else {
-      alert(error || 'No se pudo eliminar el usuario')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: responseData.error || 'No se pudo eliminar el usuario',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al eliminar:', err)
-    alert('Error de conexión al eliminar el usuario')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para eliminar el usuario',
+      confirmButtonColor: '#e74c3c'
+    })
   }
 }
 
 // Función para restaurar usuario
 async function restoreUser(id) {
-  if (!confirm('¿Deseas restaurar este usuario?')) return
+  const result = await Swal.fire({
+    title: '¿Restaurar usuario?',
+    text: "¿Deseas restaurar este usuario?",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3498db',
+    cancelButtonColor: '#95a5a6',
+    confirmButtonText: 'Sí, restaurar',
+    cancelButtonText: 'Cancelar'
+  })
+  
+  if (!result.isConfirmed) return
 
   try {
     const res = await fetch(`http://localhost:3000/api/usuarios/${id}/restore`, {
       method: 'POST'
     })
     
-    const { success, error, message } = await res.json()
-    if (success) {
-      alert(message || 'Usuario restaurado exitosamente')
-      await fetchUsers() // Recargar ambas listas
+    const responseData = await res.json()
+    
+    if (responseData.success) {
+      await Swal.fire({
+        icon: 'success',
+        title: '¡Restaurado!',
+        text: responseData.message || 'Usuario restaurado exitosamente',
+        confirmButtonColor: '#42b983'
+      })
+      await fetchUsers()
     } else {
-      alert(error || 'No se pudo restaurar el usuario')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: responseData.error || 'No se pudo restaurar el usuario',
+        confirmButtonColor: '#e74c3c'
+      })
     }
   } catch (err) {
     console.error('Error al restaurar:', err)
-    alert('Error de conexión al restaurar el usuario')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor para restaurar el usuario',
+      confirmButtonColor: '#e74c3c'
+    })
   }
 }
 
@@ -548,6 +892,27 @@ onMounted(fetchUsers)
 .nav-link.router-link-exact-active,
 .nav-link.router-link-active {
   background: #369870;
+}
+
+/* Botón para agregar usuario */
+.add-user-btn-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.add-user-btn {
+  background: #3498db;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.add-user-btn:hover {
+  background: #2980b9;
 }
 
 /* --------- Barra de búsqueda ---------- */
@@ -627,11 +992,15 @@ onMounted(fetchUsers)
 .error-text {
   color: #c33;
   margin-bottom: 16px;
+  padding: 10px;
+  background-color: #ffe6e6;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .user-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
@@ -644,6 +1013,7 @@ onMounted(fetchUsers)
   flex-direction: column;
   align-items: center;
   transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .user-card:hover {
@@ -658,28 +1028,22 @@ onMounted(fetchUsers)
 
 .user-avatar {
   width: 100%;
-  height: 160px;
+  height: 120px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f0f0f0;
-  font-size: 60px;
+  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+  font-size: 50px;
   overflow: hidden;
 }
 
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .user-details {
-  padding: 12px;
+  padding: 16px;
   width: 100%;
 }
 
 .user-details p {
-  margin: 6px 0;
+  margin: 8px 0;
   font-size: 14px;
   color: #333;
 }
@@ -688,11 +1052,14 @@ onMounted(fetchUsers)
   display: flex;
   width: 100%;
   justify-content: space-around;
-  padding: 12px;
+  padding: 16px;
   border-top: 1px solid #eceeef;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .edit-btn,
+.reset-password-btn,
 .delete-btn,
 .restore-btn {
   padding: 8px 16px;
@@ -700,7 +1067,8 @@ onMounted(fetchUsers)
   border-radius: 4px;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
+  font-weight: 600;
 }
 
 .edit-btn {
@@ -710,6 +1078,17 @@ onMounted(fetchUsers)
 
 .edit-btn:hover {
   background: #369870;
+  transform: translateY(-2px);
+}
+
+.reset-password-btn {
+  background: #f39c12;
+  color: #fff;
+}
+
+.reset-password-btn:hover {
+  background: #e67e22;
+  transform: translateY(-2px);
 }
 
 .delete-btn {
@@ -719,6 +1098,7 @@ onMounted(fetchUsers)
 
 .delete-btn:hover {
   background: #c0392b;
+  transform: translateY(-2px);
 }
 
 .restore-btn {
@@ -728,6 +1108,7 @@ onMounted(fetchUsers)
 
 .restore-btn:hover {
   background: #2980b9;
+  transform: translateY(-2px);
 }
 
 /* Mensaje sin resultados */
@@ -751,12 +1132,13 @@ onMounted(fetchUsers)
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
   background: white;
-  border-radius: 8px;
-  width: 90%;
+  border-radius: 10px;
+  width: 100%;
   max-width: 500px;
   max-height: 95vh;
   overflow-y: auto;
@@ -788,69 +1170,50 @@ onMounted(fetchUsers)
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 50%;
 }
 
 .close-btn:hover {
   color: #333;
+  background: #f0f0f0;
 }
 
 .edit-form {
   padding: 20px;
 }
 
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
 .form-group {
+  flex: 1;
   margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: bold;
-  color: #333;
+  color: #555;
 }
 
 .form-input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 16px;
   box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #42b983;
-  box-shadow: 0 0 5px rgba(66, 185, 131, 0.3);
-}
-
-.image-preview {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.preview-img {
-  width: 150px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
-.remove-img-btn {
-  display: block;
-  margin: 10px auto 0;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.remove-img-btn:hover {
-  background: #c0392b;
+  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
 
 .form-actions {
@@ -864,11 +1227,13 @@ onMounted(fetchUsers)
 
 .cancel-btn,
 .save-btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .cancel-btn {
@@ -878,6 +1243,7 @@ onMounted(fetchUsers)
 
 .cancel-btn:hover {
   background: #7f8c8d;
+  transform: translateY(-2px);
 }
 
 .save-btn {
@@ -887,11 +1253,13 @@ onMounted(fetchUsers)
 
 .save-btn:hover:not(:disabled) {
   background: #369870;
+  transform: translateY(-2px);
 }
 
 .save-btn:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Responsive */
@@ -903,6 +1271,16 @@ onMounted(fetchUsers)
   
   .navbar li {
     margin: 5px 0;
+    width: 100%;
+  }
+  
+  .nav-link {
+    text-align: center;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0;
   }
   
   .modal-content {
@@ -912,6 +1290,14 @@ onMounted(fetchUsers)
   
   .search-container {
     margin: 15px 0;
+  }
+  
+  .user-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .user-actions {
+    flex-direction: column;
   }
 }
 </style>
