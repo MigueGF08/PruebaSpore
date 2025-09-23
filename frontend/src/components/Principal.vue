@@ -27,6 +27,12 @@
             Usuarios
           </router-link>
         </li>
+        <li v-if="isUser">
+          <router-link to="/editar-usuarios-u" class="nav-link">
+            MiPerfil
+          </router-link>  
+
+        </li>
         <li v-if="isAdmin || isUser">
           <router-link to="/" class="nav-link" @click.native="logout">
             Cerrar Sesión

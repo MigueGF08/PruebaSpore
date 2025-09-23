@@ -14,6 +14,11 @@ const routes = [
     component: HelloWorld
   },
   {
+    path: '/editar-usuarios-u',
+    name: 'EditarUsuariosU',
+    component: () => import('./components/EditarUsuariosU.vue')
+  },
+  {
     path: '/principal',
     name: 'Principal',
     component: Principal
