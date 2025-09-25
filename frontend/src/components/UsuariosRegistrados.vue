@@ -66,7 +66,7 @@
 
       <div v-else class="user-list">
         <div
-          v-for="user in filteredActiveUsers"
+          v-for="user in paginatedActiveUsers"
           :key="user.id"
           class="user-card"
         >
@@ -108,6 +108,12 @@
           <p v-else>No hay usuarios registrados</p>
         </div>
       </div>
+      <!-- Paginado usuarios activos -->
+      <div v-if="filteredActiveUsers.length > usersPerPage" class="pagination">
+        <button @click="prevActivePage" :disabled="activePage === 1" class="pagination-btn">&lt;</button>
+        <span>Página {{ activePage }} de {{ totalActivePages }}</span>
+        <button @click="nextActivePage" :disabled="activePage === totalActivePages" class="pagination-btn">&gt;</button>
+      </div>
     </section>
 
     <!-- Sección de Usuarios Eliminados -->
@@ -129,7 +135,7 @@
       
       <div class="user-list">
         <div
-          v-for="user in filteredDeletedUsers"
+          v-for="user in paginatedDeletedUsers"
           :key="user.id"
           class="user-card deleted"
         >
@@ -158,6 +164,12 @@
         <div v-if="filteredDeletedUsers.length === 0 && searchDeletedQuery" class="no-results">
           <p>No se encontraron usuarios eliminados que coincidan con "{{ searchDeletedQuery }}"</p>
         </div>
+      </div>
+      <!-- Paginado usuarios eliminados -->
+      <div v-if="filteredDeletedUsers.length > usersPerPage" class="pagination">
+        <button @click="prevDeletedPage" :disabled="deletedPage === 1" class="pagination-btn">&lt;</button>
+        <span>Página {{ deletedPage }} de {{ totalDeletedPages }}</span>
+        <button @click="nextDeletedPage" :disabled="deletedPage === totalDeletedPages" class="pagination-btn">&gt;</button>
       </div>
     </section>
 
@@ -454,6 +466,37 @@ const filteredDeletedUsers = computed(() => {
   })
 })
 
+// Número de usuarios por página
+const usersPerPage = 10
+
+// Paginación usuarios activos
+const activePage = ref(1)
+const totalActivePages = computed(() => Math.ceil(filteredActiveUsers.value.length / usersPerPage))
+const paginatedActiveUsers = computed(() => {
+  const start = (activePage.value - 1) * usersPerPage
+  return filteredActiveUsers.value.slice(start, start + usersPerPage)
+})
+function nextActivePage() {
+  if (activePage.value < totalActivePages.value) activePage.value++
+}
+function prevActivePage() {
+  if (activePage.value > 1) activePage.value--
+}
+
+// Paginación usuarios eliminados
+const deletedPage = ref(1)
+const totalDeletedPages = computed(() => Math.ceil(filteredDeletedUsers.value.length / usersPerPage))
+const paginatedDeletedUsers = computed(() => {
+  const start = (deletedPage.value - 1) * usersPerPage
+  return filteredDeletedUsers.value.slice(start, start + usersPerPage)
+})
+function nextDeletedPage() {
+  if (deletedPage.value < totalDeletedPages.value) deletedPage.value++
+}
+function prevDeletedPage() {
+  if (deletedPage.value > 1) deletedPage.value--
+}
+
 // Función para obtener todos los usuarios
 async function fetchUsers() {
   loading.value = true
@@ -482,6 +525,8 @@ async function fetchUsers() {
       deletedUsers.value = deletedData.data
     }
     
+    activePage.value = 1
+    deletedPage.value = 1
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener usuarios'
     console.error('Error fetching users:', err)
@@ -1260,6 +1305,31 @@ onMounted(fetchUsers)
   background: #bdc3c7;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Paginación */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 0 0;
+}
+
+.pagination-btn {
+  background: #42b983;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 /* Responsive */

@@ -43,50 +43,58 @@
       <div v-if="loading" class="loading">Cargando carros...</div>
       <div v-if="errorMessage" class="error-text">{{ errorMessage }}</div>
 
-      <div v-else class="car-list">
-        <div
-          v-for="car in activeCars"
-          :key="car.id"
-          class="car-card"
-        >
-          <!-- Imagen del carro - MODIFICADO -->
-          <div class="car-image-container">
-            <img
-              v-if="hasImage(car)"
-              :src="getImageUrl(car)"
-              :alt="car.brand + ' ' + car.model"
-              class="car-image"
-              @error="handleImageError"
-            />
-            <div v-else class="no-image">
-              <span>🚗</span>
-              <p>Sin imagen</p>
+      <div v-else>
+        <div class="car-list">
+          <div
+            v-for="car in paginatedActiveCars"
+            :key="car.id"
+            class="car-card"
+          >
+            <!-- Imagen del carro - MODIFICADO -->
+            <div class="car-image-container">
+              <img
+                v-if="hasImage(car)"
+                :src="getImageUrl(car)"
+                :alt="car.brand + ' ' + car.model"
+                class="car-image"
+                @error="handleImageError"
+              />
+              <div v-else class="no-image">
+                <span>🚗</span>
+                <p>Sin imagen</p>
+              </div>
+            </div>
+            <div class="car-details">
+              <p><strong>ID:</strong> {{ car.id }}</p>
+              <p><strong>Marca:</strong> {{ car.brand }}</p>
+              <p><strong>Modelo:</strong> {{ car.model }}</p>
+              <p><strong>Placa:</strong> {{ car.licensePlate }}</p>
+              <p><strong>Usuario ID:</strong> {{ car.userId }}</p>
+              <p v-if="car.location">
+                <strong>Ubicación:</strong> {{ car.location.coordinates[1].toFixed(4) }}, {{ car.location.coordinates[0].toFixed(4) }}
+              </p>
+            </div>
+            <div class="car-actions">
+              <button
+                @click="openEditModal(car)"
+                class="edit-btn"
+              >
+                Editar
+              </button>
+              <button
+                @click="deleteCar(car.id)"
+                class="delete-btn"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
-          <div class="car-details">
-            <p><strong>ID:</strong> {{ car.id }}</p>
-            <p><strong>Marca:</strong> {{ car.brand }}</p>
-            <p><strong>Modelo:</strong> {{ car.model }}</p>
-            <p><strong>Placa:</strong> {{ car.licensePlate }}</p>
-            <p><strong>Usuario ID:</strong> {{ car.userId }}</p>
-            <p v-if="car.location">
-              <strong>Ubicación:</strong> {{ car.location.coordinates[1].toFixed(4) }}, {{ car.location.coordinates[0].toFixed(4) }}
-            </p>
-          </div>
-          <div class="car-actions">
-            <button
-              @click="openEditModal(car)"
-              class="edit-btn"
-            >
-              Editar
-            </button>
-            <button
-              @click="deleteCar(car.id)"
-              class="delete-btn"
-            >
-              Eliminar
-            </button>
-          </div>
+        </div>
+        <!-- Paginado carros activos -->
+        <div v-if="activeCars.length > carsPerPage" class="pagination">
+          <button @click="prevActivePage" :disabled="activePage === 1" class="pagination-btn">&lt;</button>
+          <span>Página {{ activePage }} de {{ totalActivePages }}</span>
+          <button @click="nextActivePage" :disabled="activePage === totalActivePages" class="pagination-btn">&gt;</button>
         </div>
       </div>
     </section>
@@ -96,7 +104,7 @@
       <h2>Carros Eliminados</h2>
       <div class="car-list">
         <div
-          v-for="car in deletedCars"
+          v-for="car in paginatedDeletedCars"
           :key="car.id"
           class="car-card deleted"
         >
@@ -134,6 +142,12 @@
             </button>
           </div>
         </div>
+      </div>
+      <!-- Paginado carros eliminados -->
+      <div v-if="deletedCars.length > carsPerPage" class="pagination">
+        <button @click="prevDeletedPage" :disabled="deletedPage === 1" class="pagination-btn">&lt;</button>
+        <span>Página {{ deletedPage }} de {{ totalDeletedPages }}</span>
+        <button @click="nextDeletedPage" :disabled="deletedPage === totalDeletedPages" class="pagination-btn">&gt;</button>
       </div>
     </section>
 
@@ -387,6 +401,9 @@ async function fetchCars() {
       deletedCars.value = deletedData.data
       console.log('Carros eliminados cargados:', deletedCars.value)
     }
+    
+    activePage.value = 1
+    deletedPage.value = 1
     
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener carros'
@@ -743,6 +760,36 @@ onUnmounted(() => {
     map.remove();
   }
 })
+
+const carsPerPage = 10
+
+// Paginación carros activos
+const activePage = ref(1)
+const totalActivePages = computed(() => Math.ceil(activeCars.value.length / carsPerPage))
+const paginatedActiveCars = computed(() => {
+  const start = (activePage.value - 1) * carsPerPage
+  return activeCars.value.slice(start, start + carsPerPage)
+})
+function nextActivePage() {
+  if (activePage.value < totalActivePages.value) activePage.value++
+}
+function prevActivePage() {
+  if (activePage.value > 1) activePage.value--
+}
+
+// Paginación carros eliminados
+const deletedPage = ref(1)
+const totalDeletedPages = computed(() => Math.ceil(deletedCars.value.length / carsPerPage))
+const paginatedDeletedCars = computed(() => {
+  const start = (deletedPage.value - 1) * carsPerPage
+  return deletedCars.value.slice(start, start + carsPerPage)
+})
+function nextDeletedPage() {
+  if (deletedPage.value < totalDeletedPages.value) deletedPage.value++
+}
+function prevDeletedPage() {
+  if (deletedPage.value > 1) deletedPage.value--
+}
 </script>
 
 <style scoped>
@@ -1225,5 +1272,27 @@ onUnmounted(() => {
   .car-image-container {
     height: 160px;
   }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 0 0;
+}
+.pagination-btn {
+  background: #42b983;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 </style>
