@@ -4,9 +4,82 @@ const { User, Car } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: Gestión de usuarios
+ */
+// GET /api/usuarios - Listar usuarios activos
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: { deletedAt: null },
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error('Error listing active users:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// GET /api/usuarios/deleted - Listar usuarios eliminados (soft-deleted)
+router.get('/deleted', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      paranoid: false,
+      where: { deletedAt: { [Op.ne]: null } },
+      attributes: { exclude: ['password'] },
+      order: [['deletedAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: users,
+      count: users.length
+    });
+  } catch (error) {
+    console.error('Error listing deleted users:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/usuarios:
+ *   get:
+ *     summary: Listar usuarios activos
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 count:
+ *                   type: integer
+ *       500:
+ *         description: Error interno del servidor
+ */
 // Función para validación detallada de contraseña
 const validatePasswordStrength = (password) => {
   const errors = [];
+
   
   if (password.length < 8) {
     errors.push('at least 8 characters');
@@ -27,80 +100,30 @@ const validatePasswordStrength = (password) => {
   return errors;
 };
 
-// GET /api/users - Get all active users (admin only)
-router.get('/', async (req, res) => {
-  try {
-    const users = await User.findAll({
-      where: { deletedAt: null },
-      attributes: { exclude: ['password'] },
-      include: [{
-        model: Car,
-        as: 'cars',
-        where: { deletedAt: null },
-        required: false
-      }]
-    });
-
-    res.json({
-      success: true,
-      data: users,
-      count: users.length
-    });
-  } catch (error) {
-    console.error('Error getting users:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// GET /api/users/ids-roles - Get only IDs and roles of all users
-router.get('/ids-roles', async (req, res) => {
-  try {
-    const users = await User.findAll({
-      where: { deletedAt: null },
-      attributes: ['id', 'role'], // Solo obtenemos el ID y el rol
-      order: [['id', 'ASC']]
-    });
-
-    res.json({
-      success: true,
-      data: users,
-      count: users.length
-    });
-  } catch (error) {
-    console.error('Error getting users IDs and roles:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// GET /api/users/deleted - Get deleted users (admin only)
-router.get('/deleted', async (req, res) => {
-  try {
-    const users = await User.findAll({
-      where: { deletedAt: { [Op.ne]: null } },
-      paranoid: false,
-      attributes: { exclude: ['password'] }
-    });
-
-    res.json({
-      success: true,
-      data: users,
-      count: users.length
-    });
-  } catch (error) {
-    console.error('Error getting deleted users:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Internal server error' 
-    });
-  }
-});
-
+/**
+ * @swagger
+ * /api/usuarios/{id}:
+ *   get:
+ *     summary: Obtener usuario por ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Usuario encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       404:
+ *         description: Usuario no encontrado
+ *       500:
+ *         description: Error interno del servidor
+ */
 // GET /api/users/:id - Get user by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -131,11 +154,11 @@ router.get('/:id', async (req, res) => {
       data: {
         id: user.id,
         email: user.email,
-        first_name: user.firstName,
-        last_name: user.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         phone: user.phone,
         role: user.role,
-        last_login: user.lastLogin,
+        lastLogin: user.lastLogin,
         is_active: user.isActive,
         created_at: user.createdAt,
         updated_at: user.updatedAt
@@ -150,6 +173,41 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/usuarios/register:
+ *   post:
+ *     summary: Registrar nuevo usuario
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *             required: [email, password, firstName, lastName]
+ *     responses:
+ *       201:
+ *         description: Usuario registrado
+ *       400:
+ *         description: Solicitud inválida
+ *       409:
+ *         description: El usuario ya existe
+ */
 // POST /api/users/register - Register new user
 router.post('/register', async (req, res) => {
   try {

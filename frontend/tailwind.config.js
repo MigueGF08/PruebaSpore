@@ -4,4 +4,7 @@ module.exports = {
     extend: {},
   },
   plugins: [],
+  corePlugins: {
+    preflight: false, // Mantener el estilo actual deshabilitando el reset de Tailwind
+  },
 };

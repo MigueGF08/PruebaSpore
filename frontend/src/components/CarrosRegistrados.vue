@@ -322,8 +322,10 @@ const activeCars = computed(() => {
 })
 
 // Función para verificar si un carro tiene imagen
+// Opción A: si no hay data embebida, intentamos cargarla por ID desde el backend
 const hasImage = (car) => {
-  return car.imageData || (car.image && car.image.data);
+  if (car.imageData || (car.image && car.image.data)) return true;
+  return !!car.id; // intentar con /api/carros/:id/imagen
 }
 
 // Función para obtener la URL de la imagen
@@ -357,6 +359,10 @@ const getImageUrl = (car) => {
       }
     }
     
+    // Fallback: intentar obtener desde el backend por ID
+    if (car.id) {
+      return `http://localhost:3000/api/carros/${car.id}/imagen`;
+    }
     return '';
   } catch (error) {
     console.error('Error procesando imagen:', error, car);

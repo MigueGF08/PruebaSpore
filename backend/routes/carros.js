@@ -1,14 +1,47 @@
 const express = require('express');
 const router = express.Router();
-const { Car } = require('../models');
+const db = require('../models');
+const { Car } = db;
 const { Op } = require('sequelize');
+const sequelize = db.sequelize;
 
+/**
+ * @swagger
+ * tags:
+ *   name: Cars
+ *   description: Gestión de carros
+ */
+
+/**
+ * @swagger
+ * /api/carros:
+ *   get:
+ *     summary: Listar carros activos
+ *     tags: [Cars]
+ *     responses:
+ *       200:
+ *         description: Lista de carros
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Car'
+ *                   type: integer
+ *       500:
+ *         description: Error interno del servidor
+ */
 // GET /api/carros - Get all active cars (without image data)
 router.get('/', async (req, res) => {
   try {
     const cars = await Car.findAll({
       where: { deletedAt: null },
-      attributes: { exclude: ['imageData'] }, // Excluir datos binarios
+      attributes: { exclude: ['imageData'] },
       include: ['user']
     });
     res.json({
@@ -21,24 +54,27 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/carros/deleted - Get deleted cars (admin only)
+// GET /api/carros/deleted - Listar carros eliminados (soft-deleted)
 router.get('/deleted', async (req, res) => {
   try {
     const cars = await Car.findAll({
+      paranoid: false,
       where: { deletedAt: { [Op.ne]: null } },
-      attributes: { exclude: ['imageData'] }, // Excluir datos binarios
-      paranoid: false
+      attributes: { exclude: ['imageData'] },
+      include: ['user'],
+      order: [['deletedAt', 'DESC']]
     });
+
     res.json({
       success: true,
       data: cars,
       count: cars.length
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error listing deleted cars:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
-
 // GET /api/carros/:id - Get car by ID (without image data by default)
 router.get('/:id', async (req, res) => {
   try {
@@ -61,6 +97,29 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/carros/{id}/imagen:
+ *   get:
+ *     summary: Obtener imagen específica
+ *     tags: [Cars]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Imagen encontrada
+ *         content:
+ *           application/octet-stream:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Imagen no encontrada
+ */
 // GET /api/carros/:id/imagen - Obtener imagen específica
 router.get('/:id/imagen', async (req, res) => {
   try {
@@ -68,18 +127,18 @@ router.get('/:id/imagen', async (req, res) => {
     const car = await Car.findByPk(id, {
       attributes: ['imageData', 'imageType', 'imageName']
     });
-
+    
     if (!car || !car.imageData) {
       return res.status(404).json({ error: 'Imagen no encontrada' });
     }
-
+    
     // Configurar headers para la imagen
     res.set({
       'Content-Type': car.imageType || 'image/jpeg',
       'Content-Length': car.imageData.length,
       'Content-Disposition': `inline; filename="${car.imageName || 'car_image'}"`
     });
-
+    
     // Enviar datos binarios
     res.send(car.imageData);
   } catch (error) {
@@ -87,6 +146,36 @@ router.get('/:id/imagen', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/carros:
+ *   post:
+ *     summary: Crear carro
+ *     tags: [Cars]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId: { type: integer }
+ *               licensePlate: { type: string }
+ *               brand: { type: string }
+ *               model: { type: string }
+ *               color: { type: string }
+ *               imageData: { type: string, description: 'Imagen en base64', nullable: true }
+ *               imageName: { type: string, nullable: true }
+ *               imageType: { type: string, nullable: true }
+ *               latitude: { type: number, nullable: true }
+ *               longitude: { type: number, nullable: true }
+ *             required: [licensePlate, brand, model]
+ *     responses:
+ *       201:
+ *         description: Carro creado
+ *       400:
+ *         description: Solicitud inválida
+ */
 // POST /api/carros - Create new car with image support
 router.post('/', async (req, res) => {
   try {
@@ -700,9 +789,9 @@ router.get('/user/:userId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener carros del usuario:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Error interno del servidor al obtener carros del usuario' 
+      error: 'Error interno del servidor al obtener carros del usuario'
     });
   }
 });
@@ -711,7 +800,6 @@ router.get('/user/:userId', async (req, res) => {
 router.get('/:id/with-image', async (req, res) => {
   try {
     const { id } = req.params;
-    
     // Validar que el ID sea un número válido
     if (!id || isNaN(parseInt(id))) {
       return res.status(400).json({ 
