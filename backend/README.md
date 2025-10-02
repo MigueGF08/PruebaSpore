@@ -1,49 +1,77 @@
- 
-Nodejs Version 24.6.0 
-Vue 3 + vite 
-  ➜  Local:   http://localhost:5173/
-  apis port 3000
-swagger version:
-nvm version: 11.5.1
+# Backend (Node + Express + Sequelize)
 
-Use this commands for run the project.
+Backend del proyecto. Expone APIs REST (Swagger) en el puerto 3000 y emite eventos con Socket.io.
 
-to install the map .
- cmd
- npm install leaflet 
+## Requisitos
+- Node.js 18+ (probado con 24.6.0)
+- Base de datos Postgres (por defecto) o la que configures por env
 
-use this command in the terminal on the proyect
-
-to install vue
- cmd
- npm install vue
+## Instalación
+```bash
+npm install
 ```
 
-to install vite
- cmd 
-    npm install vite
-    
-    to install swagger
-```cmd
-    npm install swagger-jsdoc swagger-ui-express
+## Variables de entorno
+El backend lee configuración desde `.env` a través de `config/config.js`.
+
+
+## Scripts
+```bash
+# levantar servidor
+npm start
 ```
-to install bcrypt
-``` cmd
- npm install bcrypt
+El servidor arranca sobre `http://localhost:3000`.
+
+## Documentación de APIs (Swagger)
+Swagger UI disponible en:
 ```
-to install bcryptjs
-npm install bcryptjs
+http://localhost:3000/api-docs
+```
+La definición se genera con `swagger-jsdoc` y se sirve con `swagger-ui-express` (ya incluidos en `package.json`).
 
-to install the token 
-npm install jsonwebtoken
+## Tecnologías y librerías principales
+- Express (`app.js`)
+- Sequelize (`models/`, `migrations/`)
+- JWT (`jsonwebtoken`) para login
+- Bcrypt / BcryptJS para hash de contraseñas
+- Socket.io para eventos en tiempo real
+- CORS habilitado para `*`
 
-to install socket.io frontend
+## Estructura relevante
+- `app.js`: App Express, CORS, JSON, Socket.io y montaje de rutas.
+- `routes/`: rutas REST (`auth`, `usuarios`, `carros`).
+- `Controls/`: controladores con la lógica de negocio.
+- `models/`: modelos Sequelize (usa `config/config.js`).
+- `migrations/`: migraciones (si usas sequelize-cli).
+- `config/config.js`: lee variables de entorno (reemplaza `config.json`).
 
-to install socket.io backend 
+## Base de datos y migraciones
+Este proyecto usa `sequelize-cli`. Si deseas ejecutar migraciones:
+```bash
+npx sequelize-cli db:migrate
+```
+Para usar `config.js` con CLI, puedes añadir `.sequelizerc` en la raíz del repo:
+```js
+const path = require('path');
+module.exports = {
+  config: path.resolve('backend/config', 'config.js'),
+  'models-path': path.resolve('backend/models'),
+  'migrations-path': path.resolve('backend/migrations'),
+  'seeders-path': path.resolve('backend/seeders'),
+};
+```
 
-to install tailwind 
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
+## Endpoints principales
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/usuarios` (y CRUD)
+- `GET /api/carros` (y CRUD, imágenes y stats)
 
-to install switf alert
-npm install sweetalert2
+## Notas
+- CORS está abierto para facilitar pruebas locales.
+- El frontend por defecto corre en `http://localhost:5173` y consume este backend en `http://localhost:3000`.
+
+## Troubleshooting
+- Error de conexión DB: valida `.env`, credenciales y `DB_HOST/DB_PORT`.
+- 401/403: revisa `JWT_SECRET` y cabeceras de autorización.
+- Swagger no carga: confirma que el servidor esté en `:3000` y visita `/api-docs`.

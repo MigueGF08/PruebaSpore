@@ -66,3 +66,10 @@ npm install sweetalert2
 - Mapas sin estilos: asegúrate de importar los estilos de Leaflet en el componente o globalmente.
 
 
+## usa estos comandos para instalar 
+- to install tailwind 
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+- to install switf alert
+npm install sweetalert2
