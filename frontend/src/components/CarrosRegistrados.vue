@@ -1,5 +1,5 @@
 <template>
-  <div class="principal">
+  <div class="principal neo-card p-6 bg-slate-800/60 rounded-xl">
     <nav class="navbar">
       <ul>
         <li>
@@ -17,7 +17,7 @@
             Agregar Carros
           </router-link>
         </li>
-      
+       
         <li>
           <router-link to="/CarrosRegistrados" class="nav-link">
             Carros Registrados
@@ -28,7 +28,7 @@
             Usuarios
           </router-link>
         </li>
-          <li>
+         <li>
           <router-link to="/" class="nav-link" @click.native="logout">
             Cerrar Sesión
           </router-link>
@@ -38,19 +38,19 @@
 
     <!-- Sección de Carros Registrados -->
     <section class="carros-registrados">
-      <h2>Carros Registrados</h2>
+      <h2 class="text-2xl font-bold text-[#00f0ff] drop-shadow mb-4">Carros Registrados</h2>
 
-      <div v-if="loading" class="loading">Cargando carros...</div>
-      <div v-if="errorMessage" class="error-text">{{ errorMessage }}</div>
+      <div v-if="loading" class="loading alert alert-info">Cargando carros...</div>
+      <div v-if="errorMessage" class="error-text alert alert-error">{{ errorMessage }}</div>
 
       <div v-else>
         <div class="car-list">
           <div
             v-for="car in paginatedActiveCars"
             :key="car.id"
-            class="car-card"
+            class="car-card neo-card"
           >
-            <!-- Imagen del carro - MODIFICADO -->
+            <!-- Imagen del carro -->
             <div class="car-image-container">
               <img
                 v-if="hasImage(car)"
@@ -77,13 +77,13 @@
             <div class="car-actions">
               <button
                 @click="openEditModal(car)"
-                class="edit-btn"
+                class="edit-btn btn btn-accent"
               >
                 Editar
               </button>
               <button
                 @click="deleteCar(car.id)"
-                class="delete-btn"
+                class="delete-btn btn btn-error text-white"
               >
                 Eliminar
               </button>
@@ -101,14 +101,14 @@
 
     <!-- Sección de Carros Eliminados -->
     <section class="carros-eliminados" v-if="deletedCars.length > 0">
-      <h2>Carros Eliminados</h2>
+      <h2 class="text-2xl font-bold text-[#ff49db] drop-shadow mb-4">Carros Eliminados</h2>
       <div class="car-list">
         <div
           v-for="car in paginatedDeletedCars"
           :key="car.id"
-          class="car-card deleted"
+          class="car-card deleted neo-card"
         >
-          <!-- Imagen del carro - MODIFICADO -->
+          <!-- Imagen del carro -->
           <div class="car-image-container">
             <img
               v-if="hasImage(car)"
@@ -136,7 +136,7 @@
           <div class="car-actions">
             <button
               @click="restoreCar(car.id)"
-              class="restore-btn"
+              class="restore-btn btn btn-info"
             >
               Restaurar
             </button>
@@ -158,7 +158,6 @@
           <h3>Editar Carro (ID: {{ editingCar.id }})</h3>
           <button @click="closeEditModal" class="close-btn">&times;</button>
         </div>
-        
         <form @submit.prevent="saveCarChanges" class="edit-form">
           <div class="form-group">
             <label for="licensePlate">Placa:</label>
@@ -807,6 +806,7 @@ function prevDeletedPage() {
   border-radius: 8px;
   background: #fafafa;
   text-align: center;
+  color: #111827; /* texto negro por defecto */
 }
 
 .navbar {
@@ -814,197 +814,14 @@ function prevDeletedPage() {
   background: #42b983;
   border-radius: 6px 6px 0 0;
   margin-bottom: 24px;
-  padding: 0;
+  padding: 12px 8px; /* taller navbar */
+  min-height: 56px;
 }
-
-.navbar ul {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-}
-
-.navbar li {
-  margin: 8px 16px;
-}
-
-.nav-link {
-  color: #fff;
-  text-decoration: none;
-  font-weight: bold;
-  padding: 12px 8px;
-  display: block;
-  transition: background 0.2s;
-  border-radius: 4px;
-}
-
+.navbar ul { list-style: none; display: flex; justify-content: center; align-items: center; gap: 0; margin: 0; padding: 0; }
+.navbar li { margin: 0 16px; }
+.nav-link { color: #fff; text-decoration: none; font-weight: bold; padding: 12px 8px; display: block; }
 .nav-link.router-link-exact-active,
-.nav-link.router-link-active {
-  background: #369870;
-}
-
-/* --------- Carros Registrados ---------- */
-.carros-registrados,
-.carros-eliminados {
-  margin-top: 32px;
-  text-align: left;
-}
-
-.carros-registrados h2,
-.carros-eliminados h2 {
-  margin-bottom: 16px;
-  color: #333;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #42b983;
-}
-
-.carros-eliminados h2 {
-  border-bottom: 2px solid #e74c3c;
-  color: #777;
-}
-
-.loading {
-  color: #555;
-  font-style: italic;
-}
-
-.error-text {
-  color: #c33;
-  margin-bottom: 16px;
-  padding: 10px;
-  background-color: #ffe6e6;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.car-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-.car-card {
-  background: #fff;
-  border: 1px solid #e1e5e9;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.car-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.car-card.deleted {
-  opacity: 0.7;
-  border-left: 4px solid #e74c3c;
-}
-
-/* Contenedor de imagen */
-.car-image-container {
-  width: 100%;
-  height: 180px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
-  overflow: hidden;
-  position: relative;
-}
-
-.car-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.no-image {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-
-.no-image span {
-  font-size: 40px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.no-image p {
-  margin: 0;
-  font-size: 12px;
-}
-
-.car-details {
-  padding: 16px;
-  width: 100%;
-}
-
-.car-details p {
-  margin: 8px 0;
-  font-size: 14px;
-  color: #333;
-}
-
-.car-actions {
-  display: flex;
-  width: 100%;
-  justify-content: space-around;
-  padding: 16px;
-  border-top: 1px solid #eceeef;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.edit-btn,
-.delete-btn,
-.restore-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-  font-weight: 600;
-}
-
-.edit-btn {
-  background: #42b983;
-  color: #fff;
-}
-
-.edit-btn:hover {
-  background: #369870;
-  transform: translateY(-2px);
-}
-
-.delete-btn {
-  background: #e74c3c;
-  color: #fff;
-}
-
-.delete-btn:hover {
-  background: #c0392b;
-  transform: translateY(-2px);
-}
-
-.restore-btn {
-  background: #3498db;
-  color: #fff;
-}
-
-.restore-btn:hover {
-  background: #2980b9;
-  transform: translateY(-2px);
-}
-
+.nav-link.router-link-active { background: #369870; border-radius: 6px; }
 /* --------- Modal de Edición ---------- */
 .modal-overlay {
   position: fixed;
@@ -1021,12 +838,14 @@ function prevDeletedPage() {
 
 .modal-content {
   background: white;
-  border-radius: 10px;
+  border-radius: 12px;
   width: 100%;
   max-width: 500px;
   max-height: 95vh;
   overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  padding: 0; /* el padding va en el header y el form como en Usuarios */
 }
 
 .modal-header {
@@ -1036,12 +855,7 @@ function prevDeletedPage() {
   padding: 20px;
   border-bottom: 1px solid #eee;
 }
-
-.modal-header h3 {
-  margin: 0;
-  color: #333;
-}
-
+.modal-header h3 { margin: 0; color: #333; }
 .close-btn {
   background: none;
   border: none;
@@ -1056,147 +870,37 @@ function prevDeletedPage() {
   justify-content: center;
   border-radius: 50%;
 }
+.close-btn:hover { color: #333; background: #f0f0f0; }
 
-.close-btn:hover {
-  color: #333;
-  background: #f0f0f0;
-}
-
-.edit-form {
-  padding: 20px;
-}
-
-.form-row {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.form-group {
-  flex: 1;
-  margin-bottom: 20px;
-}
-
+.edit-form { padding: 20px; }
+.form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+.form-group { flex: 1; margin-bottom: 22px; }
 .form-group label {
   display: block;
-  margin-bottom: 8px;
-  font-weight: bold;
-  color: #555;
+  margin: 16px 0 8px 0;
+  font-weight: 700;
+  color: #374151; /* slate-700 */
+  text-align: center;
+  font-size: 18px;
 }
-
 .form-input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 8px;
   font-size: 16px;
   box-sizing: border-box;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  background: #fff;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .form-input:focus {
   outline: none;
   border-color: #42b983;
   box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
 }
 
-.form-help {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* Estilos para el mapa y coordenadas */
-.map-container {
-  margin-top: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.map-instructions {
-  padding: 8px;
-  background: #f8f9fa;
-  margin: 0;
-  font-size: 12px;
-  text-align: center;
-  color: #6c757d;
-}
-
-.coordinates-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 10px;
-  background: #f8f9fa;
-}
-
-.input-row {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-row label {
-  font-size: 12px;
-  margin-bottom: 4px;
-  color: #495057;
-}
-
-.coord-input {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.coordinates-display {
-  padding: 8px;
-  background: #e9ecef;
-  margin: 0;
-  font-size: 12px;
-  text-align: center;
-  color: #495057;
-}
-
-.image-preview {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.preview-img {
-  width: 150px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
-.remove-img-btn {
-  display: block;
-  margin: 10px auto 0;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.remove-img-btn:hover {
-  background: #c0392b;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-}
-
+.form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; padding-top: 16px; border-top: 1px solid #eee; }
 .cancel-btn,
 .save-btn {
   padding: 12px 24px;
@@ -1207,78 +911,47 @@ function prevDeletedPage() {
   font-weight: 600;
   transition: background 0.3s, transform 0.2s;
 }
+.cancel-btn { background: #95a5a6; color: white; }
+.cancel-btn:hover { background: #7f8c8d; transform: translateY(-2px); }
+.save-btn { background: #42b983; color: white; }
+.save-btn:hover:not(:disabled) { background: #369870; transform: translateY(-2px); }
+.save-btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
 
-.cancel-btn {
-  background: #95a5a6;
-  color: white;
+/* Lista de tarjetas en 3 columnas */
+.car-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.car-card {
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.cancel-btn:hover {
-  background: #7f8c8d;
-  transform: translateY(-2px);
-}
+.car-details { color: #111827; }
 
-.save-btn {
-  background: #42b983;
-  color: white;
-}
+.car-actions { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 16px; padding: 16px; border-top: 1px solid #eceeef; }
 
-.save-btn:hover:not(:disabled) {
-  background: #369870;
-  transform: translateY(-2px);
+.edit-btn,
+.delete-btn,
+.restore-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  font-weight: 600;
 }
-
-.save-btn:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Estilos para el mapa de Leaflet */
-:deep(.leaflet-container) {
-  height: 300px;
-  width: 100%;
-  z-index: 1;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar ul {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .navbar li {
-    margin: 5px 0;
-    width: 100%;
-  }
-  
-  .nav-link {
-    text-align: center;
-  }
-  
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  
-  .modal-content {
-    width: 95%;
-    margin: 10px;
-  }
-  
-  .coordinates-inputs {
-    grid-template-columns: 1fr;
-  }
-  
-  .car-list {
-    grid-template-columns: 1fr;
-  }
-  
-  .car-image-container {
-    height: 160px;
-  }
-}
+.edit-btn { background: linear-gradient(135deg, #42b983, #2fae77); color: #fff; }
+.edit-btn:hover { background: linear-gradient(135deg, #3aa777, #2a9b6c); transform: translateY(-2px); }
+.delete-btn { background: linear-gradient(135deg, #e74c3c, #d64232); color: #fff; }
+.delete-btn:hover { background: linear-gradient(135deg, #cc4435, #b83a2c); transform: translateY(-2px); }
+.restore-btn { background: linear-gradient(135deg, #3498db, #2b86c2); color: #fff; }
+.restore-btn:hover { background: linear-gradient(135deg, #2f8ac7, #2475a8); transform: translateY(-2px); }
 
 .pagination {
   display: flex;
@@ -1287,18 +960,21 @@ function prevDeletedPage() {
   gap: 16px;
   margin: 24px 0 0 0;
 }
+
 .pagination-btn {
   background: #42b983;
   color: #fff;
   border: none;
-  border-radius: 4px;
-  padding: 6px 16px;
+  border-radius: 9999px;
+  padding: 8px 16px;
   font-size: 18px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
-.pagination-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
+.pagination-btn:hover:not(:disabled) { background: #369870; transform: translateY(-2px); }
+.pagination-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Responsive */
+@media (max-width: 1024px) { .car-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .car-list { grid-template-columns: 1fr; } }
 </style>

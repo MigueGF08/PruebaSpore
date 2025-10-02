@@ -1,40 +1,41 @@
 <template>
-  <div class="principal">
-    <nav class="navbar">
-      <ul>
+  <div class="principal neo-card p-6">
+    <nav class="navbar bg-slate-800/60 rounded-xl mb-6">
+      <ul class="menu menu-horizontal flex-wrap justify-center">
+
         <li v-if="isAdmin || isUser">
-          <router-link to="/principal" class="nav-link" exact>
+          <router-link to="/principal" class="nav-link btn btn-ghost" exact>
             Principal
           </router-link>
         </li>
         <li v-if="isAdmin || isUser">
-          <router-link to="/mis-carros" class="nav-link">
+          <router-link to="/mis-carros" class="nav-link btn btn-ghost">
             Mis Carros
           </router-link>
         </li>
         <li v-if="isAdmin">  
-          <router-link to="/agregar-carro" class="nav-link">
+          <router-link to="/agregar-carro" class="nav-link btn btn-ghost">
             Agregar Carros
           </router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/CarrosRegistrados" class="nav-link">
+          <router-link to="/CarrosRegistrados" class="nav-link btn btn-ghost">
             Carros Registrados
           </router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/UsuariosRegistrados" class="nav-link">
+          <router-link to="/UsuariosRegistrados" class="nav-link btn btn-ghost">
             Usuarios
           </router-link>
         </li>
         <li v-if="isUser">
-          <router-link to="/editar-usuarios-u" class="nav-link">
+          <router-link to="/editar-usuarios-u" class="nav-link btn btn-ghost">
             MiPerfil
           </router-link>  
 
         </li>
         <li v-if="isAdmin || isUser">
-          <router-link to="/" class="nav-link" @click.native="logout">
+          <router-link to="/" class="nav-link btn btn-error text-white" @click.native="logout">
             Cerrar Sesión
           </router-link>
         </li>
@@ -42,19 +43,9 @@
     </nav>
 
     <header>
-      <h1>Bienvenido a la Página Principal</h1>
-      
-      <div v-if="!hasSession">
-        <p class="error-message">No hay sesión activa. Por favor, inicie sesión.</p>
-        <router-link to="/" class="login-redirect-btn">
-          Ir al Login
-        </router-link>
-      </div>
-
-      <div v-else>
-        <p class="user-info">Rol actual: <strong>{{ userRole }}</strong></p>
-        <p class="user-info" v-if="userName">Usuario: <strong>{{ userName }}</strong></p>
-      </div>
+      <h1 class="text-3xl font-extrabold text-[#00f0ff] drop-shadow">Bienvenido a la Página Principal</h1>
+      <p class="user-info">Rol actual: <strong>{{ userRole }}</strong></p>
+      <p class="user-info" v-if="userName">Usuario: <strong>{{ userName }}</strong></p>
     </header>
 
     <main v-if="hasSession">

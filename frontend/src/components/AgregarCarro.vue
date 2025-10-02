@@ -397,12 +397,15 @@ const logout = () => {
     background: #42b983;
     border-radius: 6px 6px 0 0;
     margin-bottom: 24px;
-    padding: 0;
+    padding: 12px 8px;
+    min-height: 56px;
 }
 .navbar ul {
     list-style: none;
     display: flex;
     justify-content: center;
+    align-items: center;
+    gap: 0;
     margin: 0;
     padding: 0;
 }
@@ -421,6 +424,7 @@ const logout = () => {
 .nav-link.router-link-exact-active,
 .nav-link.router-link-active {
     background: #369870;
+    border-radius: 6px;
 }
 header h1 {
     margin-bottom: 16px;
@@ -506,21 +510,19 @@ p {
     width: 100%;
     height: 250px;
     border-radius: 8px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-    box-shadow: 0 2px 8px rgba(66, 185, 131, 0.08);
-    border: 1px solid #b2dfdb;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 0;
 }
 .coords {
-    display: flex;
-    justify-content: space-between;
     font-size: 14px;
     color: #369870;
     margin-top: 6px;
 }
 .image-preview {
     position: relative;
-    margin-top: 10px;
     display: inline-block;
 }
 .preview-image {
