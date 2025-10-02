@@ -65,5 +65,4 @@ npm install sweetalert2
 - CORS/401: revisa la URL del backend y tokens/headers.
 - Mapas sin estilos: asegúrate de importar los estilos de Leaflet en el componente o globalmente.
 
-## Licencia
-Este proyecto es para fines técnicos/demostrativos.
+
