@@ -3,7 +3,7 @@ require('dotenv').config();
 const common = {
   dialect: process.env.DB_DIALECT,
   host: process.env.DB_HOST,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : undefined,
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
   logging: false,
 };
 
