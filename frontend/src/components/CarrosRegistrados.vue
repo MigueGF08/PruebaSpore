@@ -152,8 +152,8 @@
     </section>
 
     <!-- Modal de Edición -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content" @click.stop>
+    <div v-if="showEditModal" class="modal-overlay">
+      <div class="modal-content">
         <div class="modal-header">
           <h3>Editar Carro (ID: {{ editingCar.id }})</h3>
           <button @click="closeEditModal" class="close-btn">&times;</button>
@@ -834,18 +834,24 @@ function prevDeletedPage() {
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  pointer-events: none; /* permite scroll y eventos en el fondo */
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
-  max-width: 500px;
-  max-height: 95vh;
-  overflow-y: auto;
+  max-width: 500px; /* tamaño original */
+  max-height: 90vh; /* mantener visible dentro del viewport */
+  background: #ffffff;
+  border-radius: 12px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  overflow-y: auto;
   padding: 0; /* el padding va en el header y el form como en Usuarios */
+  pointer-events: auto; /* el modal sigue siendo interactivo */
 }
 
 .modal-header {
@@ -976,5 +982,13 @@ function prevDeletedPage() {
 
 /* Responsive */
 @media (max-width: 1024px) { .car-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 640px) { .car-list { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { 
+  .car-list { grid-template-columns: 1fr; }
+  .modal-content { 
+    width: 92vw; 
+    max-width: 92vw; 
+    max-height: 90vh; 
+    border-radius: 12px; 
+  }
+}
 </style>

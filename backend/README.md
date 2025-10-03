@@ -40,7 +40,7 @@ La definición se genera con `swagger-jsdoc` y se sirve con `swagger-ui-express`
 ## Estructura relevante
 - `app.js`: App Express, CORS, JSON, Socket.io y montaje de rutas.
 - `routes/`: rutas REST (`auth`, `usuarios`, `carros`).
-- `Controls/`: controladores con la lógica de negocio.
+- `controls/`: controladores con la lógica de negocio.
 - `models/`: modelos Sequelize (usa `config/config.js`).
 - `migrations/`: migraciones (si usas sequelize-cli).
 - `config/config.js`: lee variables de entorno (reemplaza `config.json`).
