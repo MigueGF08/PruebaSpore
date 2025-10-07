@@ -45,6 +45,8 @@
 
     <!-- Sección de Usuarios Registrados -->
     <section class="usuarios-registrados">
+      <!-- Botón filtro: abre modal como el de editar -->
+      <button class="filter-toggle" @click="openFilterModal">🔎 Filtro</button>
       <h2>Usuarios Registrados</h2>
 
       <!-- Barra de búsqueda -->
@@ -64,9 +66,42 @@
       <div v-if="loading" class="loading">Cargando usuarios...</div>
       <div v-if="errorMessage" class="error-text">{{ errorMessage }}</div>
 
+      <!-- Modal de Filtro (Activos) -->
+      <div v-if="showFilterModal" class="modal-overlay" @click="closeFilterModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>Filtrar Usuarios</h3>
+            <button @click="closeFilterModal" class="close-btn">&times;</button>
+          </div>
+          <form @submit.prevent="applyFilter" class="edit-form">
+            <div class="form-group">
+              <label>Búsqueda rápida</label>
+              <input v-model="searchQuery" placeholder="Nombre, email, teléfono, ID" class="form-input" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Rol</label>
+                <div class="checkboxes">
+                  <label><input type="checkbox" v-model="filterRoleUser" /> Usuario</label>
+                  <label><input type="checkbox" v-model="filterRoleAdmin" /> Admin</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input v-model="filterPhone" type="text" placeholder="Ej: 555" class="form-input" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="cancel-btn" @click="clearFilter">Limpiar</button>
+              <button type="submit" class="save-btn">Aplicar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div v-else class="user-list">
         <div
-          v-for="user in paginatedActiveUsers"
+          v-for="user in filteredActiveUsers"
           :key="user.id"
           class="user-card"
         >
@@ -108,16 +143,18 @@
           <p v-else>No hay usuarios registrados</p>
         </div>
       </div>
-      <!-- Paginado usuarios activos -->
-      <div v-if="filteredActiveUsers.length > usersPerPage" class="pagination">
+      <!-- Paginado usuarios activos (desde backend) -->
+      <div class="pagination">
         <button @click="prevActivePage" :disabled="activePage === 1" class="pagination-btn">&lt;</button>
-        <span>Página {{ activePage }} de {{ totalActivePages }}</span>
-        <button @click="nextActivePage" :disabled="activePage === totalActivePages" class="pagination-btn">&gt;</button>
+        <span>Página {{ activePage }} de {{ activeTotalPages }}</span>
+        <button @click="nextActivePage" :disabled="activePage === activeTotalPages" class="pagination-btn">&gt;</button>
       </div>
     </section>
 
     <!-- Sección de Usuarios Eliminados -->
     <section class="usuarios-eliminados" v-if="deletedUsers.length > 0">
+      <!-- Botón filtro esquina eliminados: abre modal -->
+      <button class="filter-toggle" @click="openDeletedFilterModal">🔎 Filtro</button>
       <h2>Usuarios Eliminados</h2>
       
       <!-- Barra de búsqueda para usuarios eliminados -->
@@ -133,9 +170,42 @@
         </button>
       </div>
       
-      <div class="user-list">
+      <!-- Modal de Filtro (Eliminados) -->
+      <div v-if="showDeletedFilterModal" class="modal-overlay" @click="closeDeletedFilterModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>Filtrar Usuarios Eliminados</h3>
+            <button @click="closeDeletedFilterModal" class="close-btn">&times;</button>
+          </div>
+          <form @submit.prevent="applyDeletedFilter" class="edit-form">
+            <div class="form-group">
+              <label>Búsqueda rápida</label>
+              <input v-model="searchDeletedQuery" placeholder="Nombre, email, teléfono, ID" class="form-input" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Rol</label>
+                <div class="checkboxes">
+                  <label><input type="checkbox" v-model="filterDeletedRoleUser" /> Usuario</label>
+                  <label><input type="checkbox" v-model="filterDeletedRoleAdmin" /> Admin</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input v-model="filterDeletedPhone" type="text" placeholder="Ej: 555" class="form-input" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="cancel-btn" @click="clearDeletedFilter">Limpiar</button>
+              <button type="submit" class="save-btn">Aplicar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="user-list" v-else>
         <div
-          v-for="user in paginatedDeletedUsers"
+          v-for="user in filteredDeletedUsers"
           :key="user.id"
           class="user-card deleted"
         >
@@ -165,11 +235,11 @@
           <p>No se encontraron usuarios eliminados que coincidan con "{{ searchDeletedQuery }}"</p>
         </div>
       </div>
-      <!-- Paginado usuarios eliminados -->
-      <div v-if="filteredDeletedUsers.length > usersPerPage" class="pagination">
+      <!-- Paginado usuarios eliminados (desde backend) -->
+      <div class="pagination">
         <button @click="prevDeletedPage" :disabled="deletedPage === 1" class="pagination-btn">&lt;</button>
-        <span>Página {{ deletedPage }} de {{ totalDeletedPages }}</span>
-        <button @click="nextDeletedPage" :disabled="deletedPage === totalDeletedPages" class="pagination-btn">&gt;</button>
+        <span>Página {{ deletedPage }} de {{ deletedTotalPages }}</span>
+        <button @click="nextDeletedPage" :disabled="deletedPage === deletedTotalPages" class="pagination-btn">&gt;</button>
       </div>
     </section>
 
@@ -257,6 +327,27 @@
             </button>
             <button type="submit" class="save-btn" :disabled="creatingUser">
               {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
+
+// Modal de filtro para Eliminados
+function openDeletedFilterModal() {
+  showDeletedFilterModal.value = true
+}
+function closeDeletedFilterModal() {
+  showDeletedFilterModal.value = false
+}
+function applyDeletedFilter() {
+  deletedPage.value = 1
+  fetchUsers()
+  closeDeletedFilterModal()
+}
+function clearDeletedFilter() {
+  searchDeletedQuery.value = ''
+  filterDeletedRoleUser.value = false
+  filterDeletedRoleAdmin.value = false
+  filterDeletedPhone.value = ''
+  deletedPage.value = 1
+  fetchUsers()
+}
             </button>
           </div>
         </form>
@@ -391,6 +482,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
+import { apiUrl } from '../lib/api'
 
 const users = ref([])
 const deletedUsers = ref([])
@@ -427,9 +519,22 @@ const resettingPassword = ref(false)
 // Estados para búsqueda
 const searchQuery = ref('')
 const searchDeletedQuery = ref('')
+const showFilterModal = ref(false)
+const filterRoleUser = ref(false)
+const filterRoleAdmin = ref(false)
+const filterPhone = ref('')
+const showDeletedFilterModal = ref(false)
+const filterDeletedRoleUser = ref(false)
+const filterDeletedRoleAdmin = ref(false)
+const filterDeletedPhone = ref('')
+
+// Total de páginas (desde backend)
+const activeTotalPages = ref(1)
+const deletedTotalPages = ref(1)
 
 // Computed para separar usuarios activos
 const activeUsers = computed(() => {
+  // el backend ya retorna activos; mantenemos por compatibilidad
   return users.value.filter(user => !user.deletedAt)
 })
 
@@ -465,56 +570,72 @@ const filteredDeletedUsers = computed(() => {
   })
 })
 
-// Número de usuarios por página
-const usersPerPage = 9
-
-// Paginación usuarios activos
+// Paginación controlada por backend
+const usersPerPage = 10
 const activePage = ref(1)
-const totalActivePages = computed(() => Math.ceil(filteredActiveUsers.value.length / usersPerPage))
-const paginatedActiveUsers = computed(() => {
-  const start = (activePage.value - 1) * usersPerPage
-  return filteredActiveUsers.value.slice(start, start + usersPerPage)
-})
 function nextActivePage() {
-  if (activePage.value < totalActivePages.value) activePage.value++
+  if (activePage.value < activeTotalPages.value) {
+    activePage.value++
+    fetchUsers()
+  }
 }
 function prevActivePage() {
-  if (activePage.value > 1) activePage.value--
+  if (activePage.value > 1) {
+    activePage.value--
+    fetchUsers()
+  }
 }
 
-// Paginación usuarios eliminados
 const deletedPage = ref(1)
-const totalDeletedPages = computed(() => Math.ceil(filteredDeletedUsers.value.length / usersPerPage))
-const paginatedDeletedUsers = computed(() => {
-  const start = (deletedPage.value - 1) * usersPerPage
-  return filteredDeletedUsers.value.slice(start, start + usersPerPage)
-})
 function nextDeletedPage() {
-  if (deletedPage.value < totalDeletedPages.value) deletedPage.value++
+  if (deletedPage.value < deletedTotalPages.value) {
+    deletedPage.value++
+    fetchUsers()
+  }
 }
 function prevDeletedPage() {
-  if (deletedPage.value > 1) deletedPage.value--
+  if (deletedPage.value > 1) {
+    deletedPage.value--
+    fetchUsers()
+  }
 }
 
-// Función para obtener todos los usuarios
+// Función para obtener usuarios (paginado backend)
 async function fetchUsers() {
   loading.value = true
   errorMessage.value = ''
   try {
-    // Obtener usuarios activos
-    const activeRes = await fetch('http://localhost:3000/api/usuarios')
+    // Obtener usuarios activos (con page/limit)
+    // Construir query con filtros
+    const roleParts = []
+    if (filterRoleUser.value) roleParts.push('user')
+    if (filterRoleAdmin.value) roleParts.push('admin')
+    const roleQS = roleParts.length ? `&role=${encodeURIComponent(roleParts.join(','))}` : ''
+    const phoneQS = filterPhone.value ? `&phone=${encodeURIComponent(filterPhone.value)}` : ''
+    const qQS = searchQuery.value ? `&q=${encodeURIComponent(searchQuery.value)}` : ''
+
+    const activeUrl = apiUrl(`/api/usuarios?page=${activePage.value}&limit=${usersPerPage}${qQS}${roleQS}${phoneQS}`)
+    const activeRes = await fetch(activeUrl)
     if (!activeRes.ok) throw new Error('Error al obtener usuarios activos')
     
     const activeData = await activeRes.json()
     
-    // Obtener usuarios eliminados
-    const deletedRes = await fetch('http://localhost:3000/api/usuarios/deleted')
+    // Obtener usuarios eliminados (con page/limit y filtros)
+    const delRoleParts = []
+    if (filterDeletedRoleUser.value) delRoleParts.push('user')
+    if (filterDeletedRoleAdmin.value) delRoleParts.push('admin')
+    const delRoleQS = delRoleParts.length ? `&role=${encodeURIComponent(delRoleParts.join(','))}` : ''
+    const delPhoneQS = filterDeletedPhone.value ? `&phone=${encodeURIComponent(filterDeletedPhone.value)}` : ''
+    const delQQS = searchDeletedQuery.value ? `&q=${encodeURIComponent(searchDeletedQuery.value)}` : ''
+    const deletedUrl = apiUrl(`/api/usuarios/deleted?page=${deletedPage.value}&limit=${usersPerPage}${delQQS}${delRoleQS}${delPhoneQS}`)
+    const deletedRes = await fetch(deletedUrl)
     if (!deletedRes.ok) throw new Error('Error al obtener usuarios eliminados')
     
     const deletedData = await deletedRes.json()
     
     if (activeData.success) {
       users.value = activeData.data
+      activeTotalPages.value = activeData.totalPages || 1
       console.log('Usuarios cargados:', users.value) // Para debug
     } else {
       errorMessage.value = activeData.error || 'No se pudieron cargar los usuarios activos'
@@ -522,10 +643,10 @@ async function fetchUsers() {
     
     if (deletedData.success) {
       deletedUsers.value = deletedData.data
+      deletedTotalPages.value = deletedData.totalPages || 1
     }
     
-    activePage.value = 1
-    deletedPage.value = 1
+    // No reiniciar páginas para permitir navegar
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener usuarios'
     console.error('Error fetching users:', err)
@@ -571,7 +692,7 @@ async function createNewUser() {
       role: newUser.value.role
     }
 
-    const res = await fetch('http://localhost:3000/api/usuarios/register', {
+    const res = await fetch(apiUrl('/api/usuarios/register'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -646,7 +767,7 @@ async function resetPassword() {
   resettingPassword.value = true
   try {
     // Usar el endpoint de administrador para restablecer contraseña
-    const res = await fetch(`http://localhost:3000/api/usuarios/${resetPasswordUser.value.id}/admin-password`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${resetPasswordUser.value.id}/admin-password`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -731,7 +852,7 @@ async function saveUserChanges() {
       role: editingUser.value.role
     }
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${editingUser.value.id}/admin-update`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${editingUser.value.id}/admin-update`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -787,7 +908,7 @@ async function deleteUser(id) {
   if (!result.isConfirmed) return
 
   try {
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${id}`), {
       method: 'DELETE'
     })
     
@@ -836,7 +957,7 @@ async function restoreUser(id) {
   if (!result.isConfirmed) return
 
   try {
-    const res = await fetch(`http://localhost:3000/api/usuarios/${id}/restore`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${id}/restore`), {
       method: 'POST'
     })
     

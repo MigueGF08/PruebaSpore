@@ -1,84 +1,164 @@
 const { User, Car } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const {
+  parsePageLimit,
+  sanitizeQueryString,
+  getValidRolesFromParam,
+  validatePhone,
+  validateEmail,
+  validateRole,
+  parsePositiveInt
+} = require('../utils/validators');
 
 // Función para validación detallada de contraseña
 const validatePasswordStrength = (password) => {
   const errors = [];
   if (password.length < 8) errors.push('at least 8 characters');
   if (!/[a-z]/.test(password)) errors.push('one lowercase letter');
-  if (!/[A-Z]/.test(password)) errors.push('one uppercase letter');
   if (!/\d/.test(password)) errors.push('one number');
   if (!/[@$!%*?&]/.test(password)) errors.push('one special character (@$!%*?&)');
   return errors;
 };
 
-// Obtener todos los usuarios activos
+// Obtener todos los usuarios activos (paginado)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      where: { deletedAt: null },
+    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
+    const q = sanitizeQueryString(req.query.q || '');
+    const roleParam = (req.query.role || '').trim(); // e.g., 'user', 'admin', or 'user,admin'
+    const phoneParam = (req.query.phone || '').trim();
+
+    const where = { deletedAt: null };
+    if (q) {
+      where[Op.or] = [
+        { firstName: { [Op.iLike || Op.like]: `%${q}%` } },
+        { lastName: { [Op.iLike || Op.like]: `%${q}%` } },
+        { email: { [Op.iLike || Op.like]: `%${q}%` } },
+        { phone: { [Op.iLike || Op.like]: `%${q}%` } },
+      ];
+    }
+    // Validación y filtros adicionales
+    if (phoneParam) {
+      if (!validatePhone(phoneParam)) {
+        return res.status(400).json({ success: false, error: 'Invalid phone filter' });
+      }
+      where.phone = { [Op.iLike || Op.like]: `%${phoneParam}%` };
+    }
+    if (roleParam) {
+      const roles = getValidRolesFromParam(roleParam);
+      if (roles === null) {
+        return res.status(400).json({ success: false, error: 'Invalid role filter' });
+      }
+      if (roles.length === 1) {
+        where.role = roles[0];
+      } else if (roles.length > 1) {
+        where.role = { [Op.in]: roles };
+      }
+    }
+
+    const { rows, count } = await User.findAndCountAll({
+      where,
       attributes: { exclude: ['password'] },
       include: [{
         model: Car,
         as: 'cars',
         where: { deletedAt: null },
         required: false
-      }]
+      }],
+      distinct: true,
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
     });
 
     res.json({
       success: true,
-      data: users,
-      count: users.length
+      data: rows,
+      count: rows.length,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
-// Obtener solo IDs y roles de todos los usuarios
-exports.getIdsRoles = async (req, res) => {
-  try {
-    const users = await User.findAll({
-      where: { deletedAt: null },
-      attributes: ['id', 'role'],
-      order: [['id', 'ASC']]
-    });
-
-    res.json({
-      success: true,
-      data: users,
-      count: users.length
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-};
-
-// Obtener usuarios eliminados
+// Obtener usuarios eliminados (paginado)
 exports.getDeletedUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      where: { deletedAt: { [Op.ne]: null } },
-      paranoid: false,
-      attributes: { exclude: ['password'] }
-    });
+    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
+    const q = sanitizeQueryString(req.query.q || '');
+    const roleParam = (req.query.role || '').trim();
+    const phoneParam = (req.query.phone || '').trim();
 
+    const where = { deletedAt: { [Op.ne]: null } };
+    if (q) {
+      where[Op.or] = [
+        { firstName: { [Op.iLike || Op.like]: `%${q}%` } },
+        { lastName: { [Op.iLike || Op.like]: `%${q}%` } },
+        { email: { [Op.iLike || Op.like]: `%${q}%` } },
+        { phone: { [Op.iLike || Op.like]: `%${q}%` } },
+      ];
+    }
+    if (phoneParam) {
+      if (!validatePhone(phoneParam)) {
+        return res.status(400).json({ success: false, error: 'Invalid phone filter' });
+      }
+      where.phone = { [Op.iLike || Op.like]: `%${phoneParam}%` };
+    }
+    if (roleParam) {
+      const roles = getValidRolesFromParam(roleParam);
+      if (roles === null) {
+        return res.status(400).json({ success: false, error: 'Invalid role filter' });
+      }
+      if (roles.length === 1) {
+        where.role = roles[0];
+      } else if (roles.length > 1) {
+        where.role = { [Op.in]: roles };
+      }
+    }
+
+    const { rows, count } = await User.findAndCountAll({
+      paranoid: false,
+      where,
+      attributes: { exclude: ['password'] },
+      include: [{
+        model: Car,
+        as: 'cars',
+        paranoid: false,
+        required: false
+      }],
+      distinct: true,
+      limit,
+      offset,
+      order: [['deletedAt', 'DESC']]
+    });
+    
     res.json({
       success: true,
-      data: users,
-      count: users.length
+      data: rows,
+      count: rows.length,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 
-// Obtener usuario por ID
+// Obtener usuario por ID (excluye password e incluye carros no eliminados)
 exports.getUserById = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!parsePositiveInt(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid user id' });
+    }
+
     const user = await User.findByPk(id, {
       attributes: { exclude: ['password'] },
       include: [{
@@ -93,21 +173,7 @@ exports.getUserById = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    res.json({
-      success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        first_name: user.firstName,
-        last_name: user.lastName,
-        phone: user.phone,
-        role: user.role,
-        last_login: user.lastLogin,
-        is_active: user.isActive,
-        created_at: user.createdAt,
-        updated_at: user.updatedAt
-      }
-    });
+    res.json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
@@ -123,6 +189,16 @@ exports.registerUser = async (req, res) => {
         success: false,
         error: 'Email, password, first name, and last name are required'
       });
+    }
+
+    if (!validateEmail(email)) {
+      return res.status(400).json({ success: false, error: 'Invalid email' });
+    }
+    if (role && !validateRole(role)) {
+      return res.status(400).json({ success: false, error: 'Invalid role' });
+    }
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ success: false, error: 'Invalid phone' });
     }
 
     const errors = validatePasswordStrength(password);
@@ -232,6 +308,9 @@ exports.loginUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!parsePositiveInt(id)) {
+      return res.status(400).json({ success: false, error: 'Invalid user id' });
+    }
     const { firstName, lastName, phone, role, isActive, userId } = req.body;
 
     const user = await User.findByPk(id);
@@ -242,8 +321,18 @@ exports.updateUser = async (req, res) => {
     const updateData = {};
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
-    if (phone !== undefined) updateData.phone = phone;
-    if (role !== undefined) updateData.role = role;
+    if (phone !== undefined) {
+      if (phone && !validatePhone(phone)) {
+        return res.status(400).json({ success: false, error: 'Invalid phone' });
+      }
+      updateData.phone = phone;
+    }
+    if (role !== undefined) {
+      if (role && !validateRole(role)) {
+        return res.status(400).json({ success: false, error: 'Invalid role' });
+      }
+      updateData.role = role;
+    }
     if (isActive !== undefined) updateData.isActive = isActive;
     if (userId !== undefined) updateData.userId = userId;
 

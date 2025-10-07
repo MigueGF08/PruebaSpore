@@ -68,11 +68,15 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { io } from 'socket.io-client'
+import { apiUrl, SOCKET_URL, SOCKET_PATH } from '../lib/api'
 
 export default {
   name: 'MisCarros',
   setup() {
     const router = useRouter()
+
+    // Estado
     let map = null
     let socket = null
     const cars = ref([])
@@ -80,144 +84,121 @@ export default {
     const realTimeActive = ref(false)
     const markers = ref(new Map())
 
-    // Obtener información del usuario actual
+    // Usuario actual y roles
     const currentUser = ref({
       id: localStorage.getItem('userId') || '1',
       name: localStorage.getItem('userName') || 'Usuario Ejemplo',
       role: localStorage.getItem('userRole') || 'user'
     })
-
     const isAdmin = computed(() => currentUser.value.role === 'admin')
     const isUser = computed(() => currentUser.value.role === 'user')
 
-    // Configurar Socket.io - SOLO POLLING
+    // Socket.io (solo polling)
     const setupSocket = () => {
       try {
-        // Usar el io global desde el CDN
         if (typeof io === 'undefined') {
           console.warn('Socket.io no está disponible. Modo sin tiempo real.')
           return
         }
 
         console.log('🔗 Intentando conectar con Socket.io...')
-        
-        socket = io('http://localhost:3000', {
-          transports: ['polling'], // SOLO POLLING - evita problemas de WebSocket
+        socket = io(SOCKET_URL, {
+          transports: ['polling'],
           reconnection: true,
           reconnectionAttempts: 10,
           reconnectionDelay: 1000,
           timeout: 15000,
-          path: '/socket.io/',
+          path: SOCKET_PATH,
           forceNew: true
         })
 
         socket.on('connect', () => {
           console.log('✅ Conectado al servidor Socket.io via polling')
           realTimeActive.value = true
-          
           if (isAdmin.value) {
             socket.emit('join-admin-room')
-            console.log('👨‍💼 Unido a la sala de administradores')
           } else {
             socket.emit('join-user-room', currentUser.value.id)
-            console.log('👤 Unido a la sala del usuario:', currentUser.value.id)
           }
         })
 
-        socket.on('disconnect', (reason) => {
-          console.log('❌ Desconectado del servidor Socket.io:', reason)
+        socket.on('disconnect', () => {
           realTimeActive.value = false
         })
 
-        socket.on('connect_error', (error) => {
-          console.error('❌ Error de conexión Socket.io:', error)
-          realTimeActive.value = false
-          
-          // Intentar reconectar después de un delay
-          setTimeout(() => {
-            if (socket && !socket.connected) {
-              console.log('🔄 Intentando reconectar...')
-              socket.connect()
-            }
-          }, 3000)
-        })
-
-        socket.on('reconnect', (attemptNumber) => {
-          console.log(`🔁 Reconectado después de ${attemptNumber} intentos`)
-          realTimeActive.value = true
-        })
-
-        // Escuchar eventos de carros
         socket.on('car-created', handleCarCreated)
         socket.on('car-updated', handleCarUpdated)
         socket.on('car-deleted', handleCarDeleted)
-
-      } catch (error) {
-        console.error('Error configurando Socket.io:', error)
+      } catch (e) {
+        console.error('Error configurando Socket.io:', e)
         realTimeActive.value = false
       }
     }
 
-    // Manejar eventos de carros
+    // Handlers de carros
     const handleCarCreated = (carData) => {
-      console.log('🚗 Carro creado:', carData)
       if (isAdmin.value || carData.userId == currentUser.value.id) {
         addCarToMap(carData)
         cars.value.push(carData)
       }
     }
-
     const handleCarUpdated = (carData) => {
-      console.log('✏️ Carro actualizado:', carData)
       if (isAdmin.value || carData.userId == currentUser.value.id) {
         updateCarOnMap(carData)
-        const index = cars.value.findIndex(c => c.id === carData.id)
-        if (index !== -1) {
-          cars.value[index] = carData
-        }
+        const idx = cars.value.findIndex(c => c.id === carData.id)
+        if (idx !== -1) cars.value[idx] = carData
       }
     }
-
     const handleCarDeleted = (carData) => {
-      console.log('🗑️ Carro eliminado:', carData)
       if (isAdmin.value || carData.userId == currentUser.value.id) {
         removeCarFromMap(carData.id)
         cars.value = cars.value.filter(c => c.id !== carData.id)
       }
     }
 
-    // Funciones del mapa
+    // Funciones de mapa
+    const getCarLatLng = (car) => {
+      if (car.latitude && car.longitude) return [car.latitude, car.longitude]
+      if (car.location && car.location.coordinates) return [car.location.coordinates[1], car.location.coordinates[0]]
+      return null
+    }
     const addCarToMap = (car) => {
       const latLng = getCarLatLng(car)
-      if (!latLng) {
-        console.warn('Carro sin coordenadas:', car)
-        return
-      }
-      
-      const marker = L.marker(latLng)
-        .bindPopup(createPopupContent(car))
-        .addTo(map)
-      
+      if (!latLng) return
+      const coordsHtml = latLng
+        ? '<br/><strong>Coordenadas:</strong> ' + latLng[0].toFixed(4) + ', ' + latLng[1].toFixed(4)
+        : ''
+      const popupHtml =
+        '<div class="car-popup"><strong>' + car.brand + ' ' + car.model + '</strong><br/>' +
+        '<strong>Placa:</strong> ' + car.licensePlate + '<br/>' +
+        '<strong>Color:</strong> ' + car.color + '<br/>' +
+        '<strong>Usuario ID:</strong> ' + car.userId +
+        coordsHtml + '</div>'
+      const marker = L.marker(latLng).bindPopup(popupHtml).addTo(map)
       markers.value.set(car.id, marker)
-      
-      if (markers.value.size === 1) {
-        map.setView(latLng, 13)
-      } else {
+      if (markers.value.size === 1) map.setView(latLng, 13)
+      else {
         const group = L.featureGroup(Array.from(markers.value.values()))
         map.fitBounds(group.getBounds().pad(0.2))
       }
     }
-
     const updateCarOnMap = (car) => {
-      const existingMarker = markers.value.get(car.id)
+      const marker = markers.value.get(car.id)
       const latLng = getCarLatLng(car)
-      
-      if (existingMarker && latLng) {
-        existingMarker.setLatLng(latLng)
-        existingMarker.setPopupContent(createPopupContent(car))
+      if (marker && latLng) {
+        const coordsHtml = latLng
+          ? '<br/><strong>Coordenadas:</strong> ' + latLng[0].toFixed(4) + ', ' + latLng[1].toFixed(4)
+          : ''
+        const popupHtml =
+          '<div class="car-popup"><strong>' + car.brand + ' ' + car.model + '</strong><br/>' +
+          '<strong>Placa:</strong> ' + car.licensePlate + '<br/>' +
+          '<strong>Color:</strong> ' + car.color + '<br/>' +
+          '<strong>Usuario ID:</strong> ' + car.userId +
+          coordsHtml + '</div>'
+        marker.setLatLng(latLng)
+        marker.setPopupContent(popupHtml)
       }
     }
-
     const removeCarFromMap = (carId) => {
       const marker = markers.value.get(carId)
       if (marker) {
@@ -226,66 +207,15 @@ export default {
       }
     }
 
-    const getCarLatLng = (car) => {
-      if (car.latitude && car.longitude) {
-        return [car.latitude, car.longitude]
-      } else if (car.location && car.location.coordinates) {
-        return [car.location.coordinates[1], car.location.coordinates[0]]
-      }
-      return null
-    }
-
-    const createPopupContent = (car) => {
-      const latLng = getCarLatLng(car)
-      return `
-        <div class="car-popup">
-          <strong>${car.brand} ${car.model}</strong><br/>
-          <strong>Placa:</strong> ${car.licensePlate}<br/>
-          <strong>Color:</strong> ${car.color}<br/>
-          <strong>Usuario ID:</strong> ${car.userId}<br/>
-          ${latLng ? `<strong>Coordenadas:</strong> ${latLng[0].toFixed(4)}, ${latLng[1].toFixed(4)}` : ''}
-        </div>
-      `
-    }
-
-    const logout = () => {
-      if (socket) {
-        socket.disconnect()
-        socket = null
-      }
-      localStorage.removeItem('userId')
-      localStorage.removeItem('userName')
-      localStorage.removeItem('userRole')
-      localStorage.removeItem('token')
-      router.push('/')
-    }
-
+    // Fetch carros
     const fetchCars = async () => {
       try {
         const token = localStorage.getItem('token') || 'test-token'
-        let url = 'http://localhost:3000/api/carros'
-        
-        if (currentUser.value.role === 'user') {
-          url = `http://localhost:3000/api/carros/user/${currentUser.value.id}`
-        }
-        
-        console.log('📡 Fetching cars from:', url)
-        
-        const res = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-        
-        if (res.status === 401) {
-          console.warn('⚠️ No autorizado, cerrando sesión')
-          logout()
-          return []
-        }
-        
+        let url = apiUrl('/api/carros')
+        if (currentUser.value.role === 'user') url = apiUrl(`/api/carros/user/${currentUser.value.id}`)
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
+        if (res.status === 401) { logout(); return [] }
         const data = await res.json()
-        console.log('✅ Cars fetched:', data.data ? data.data.length : 0)
         return data.success ? (data.data || data.carros || []) : []
       } catch (err) {
         console.error('❌ Error fetching cars:', err)
@@ -293,59 +223,38 @@ export default {
       }
     }
 
+    // Montaje
     onMounted(async () => {
       try {
-        // Inicializar mapa
         map = L.map('map').setView([19.4326, -99.1332], 5)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map)
-
-        // Configurar socket - con delay para asegurar que el DOM esté listo
-        setTimeout(() => {
-          setupSocket()
-        }, 1000)
-
-        // Obtener carros
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map)
+        setTimeout(() => setupSocket(), 500)
         loading.value = true
         const initialCars = await fetchCars()
         cars.value = initialCars
-        
-        // Añadir carros al mapa
         initialCars.forEach(addCarToMap)
-
-        // Ajustar vista
-        if (markers.value.size > 0) {
-          const group = L.featureGroup(Array.from(markers.value.values()))
-          map.fitBounds(group.getBounds().pad(0.2))
-        } else {
-          console.log('ℹ️ No hay carros para mostrar')
-          map.setView([19.4326, -99.1332], 10)
-        }
-        
+        if (markers.value.size === 0) map.setView([19.4326, -99.1332], 10)
         loading.value = false
-      } catch (error) {
-        console.error('❌ Error inicializando componente:', error)
+      } catch (e) {
+        console.error('❌ Error inicializando componente:', e)
         loading.value = false
       }
     })
 
     onUnmounted(() => {
-      if (socket) {
-        socket.disconnect()
-        socket = null
-      }
+      if (socket) { socket.disconnect(); socket = null }
     })
 
-    return {
-      currentUser,
-      isAdmin,
-      isUser,
-      cars,
-      loading,
-      realTimeActive,
-      logout
+    const logout = () => {
+      if (socket) { socket.disconnect(); socket = null }
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('token')
+      router.push('/')
     }
+
+    return { currentUser, isAdmin, isUser, cars, loading, realTimeActive, logout }
   }
 }
 </script>

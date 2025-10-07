@@ -1,70 +1,165 @@
- const db = require('../models');
- const { Car } = db;
- const { Op } = require('sequelize');
+const db = require('../models');
+const { Car } = db;
+const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
+const {
+  parsePageLimit,
+  sanitizeQueryString,
+  parsePositiveInt
+} = require('../utils/validators');
 
- // Listar carros activos (sin imageData)
- exports.listActive = async (req, res) => {
-   try {
-     const cars = await Car.findAll({
-       where: { deletedAt: null },
-       attributes: { exclude: ['imageData'] },
-       include: ['user']
-     });
-     res.json({ success: true, data: cars, count: cars.length });
-   } catch (error) {
-     res.status(500).json({ success: false, error: error.message });
-   }
- };
+// Directorio para almacenar imágenes de carros en disco
+const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'cars');
+function ensureUploadsDir() {
+  try {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  } catch (_) {}
+}
 
- // Listar carros eliminados (soft-deleted)
- exports.listDeleted = async (req, res) => {
-   try {
-     const cars = await Car.findAll({
-       paranoid: false,
-       where: { deletedAt: { [Op.ne]: null } },
-       attributes: { exclude: ['imageData'] },
-       include: ['user'],
-       order: [['deletedAt', 'DESC']]
-     });
-     res.json({ success: true, data: cars, count: cars.length });
-   } catch (error) {
-     res.status(500).json({ success: false, error: 'Internal server error' });
-   }
- };
+function getExtFromMime(mime) {
+  if (!mime) return 'jpg';
+  const map = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' };
+  return map[mime.toLowerCase()] || 'jpg';
+}
+
+async function writeImageFile(buffer, baseName, mime) {
+  ensureUploadsDir();
+  const ext = getExtFromMime(mime);
+  const filename = `${baseName}.${ext}`;
+  const filePath = path.join(UPLOADS_DIR, filename);
+  await fs.promises.writeFile(filePath, buffer);
+  const stats = await fs.promises.stat(filePath);
+  return { filename, size: stats.size, path: filePath };
+}
+
+async function tryRemoveImage(filename) {
+  if (!filename) return;
+  const fp = path.join(UPLOADS_DIR, filename);
+  try { await fs.promises.unlink(fp); } catch (_) {}
+}
+
+ // Listar carros activos (paginado, sin imageData)
+exports.listActive = async (req, res) => {
+  try {
+    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
+    const q = sanitizeQueryString(req.query.q || '');
+
+    const where = { deletedAt: null };
+    if (q) {
+      const likeOp = Op.iLike || Op.like;
+      where[Op.or] = [
+        { brand: { [likeOp]: `%${q}%` } },
+        { model: { [likeOp]: `%${q}%` } },
+        { licensePlate: { [likeOp]: `%${q}%` } },
+        { color: { [likeOp]: `%${q}%` } },
+        { userId: isNaN(Number(q)) ? -1 : Number(q) }
+      ];
+    }
+
+    const { rows, count } = await Car.findAndCountAll({
+      where,
+      attributes: { exclude: ['imageData'] },
+      include: ['user'],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: rows,
+      count: rows.length,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+ // Listar carros eliminados (paginado, soft-deleted)
+exports.listDeleted = async (req, res) => {
+  try {
+    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
+    const q = sanitizeQueryString(req.query.q || '');
+
+    const where = { deletedAt: { [Op.ne]: null } };
+    if (q) {
+      const likeOp = Op.iLike || Op.like;
+      where[Op.or] = [
+        { brand: { [likeOp]: `%${q}%` } },
+        { model: { [likeOp]: `%${q}%` } },
+        { licensePlate: { [likeOp]: `%${q}%` } },
+        { color: { [likeOp]: `%${q}%` } },
+        { userId: isNaN(Number(q)) ? -1 : Number(q) }
+      ];
+    }
+
+    const { rows, count } = await Car.findAndCountAll({
+      paranoid: false,
+      where,
+      attributes: { exclude: ['imageData'] },
+      include: ['user'],
+      limit,
+      offset,
+      order: [['deletedAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      data: rows,
+      count: rows.length,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
 
  // Obtener carro por ID (sin imageData)
- exports.getById = async (req, res) => {
-   try {
-     const { id } = req.params;
-     const car = await Car.findByPk(id, {
-       attributes: { exclude: ['imageData'] },
-       include: ['user']
-     });
-     if (!car) return res.status(404).json({ error: 'Car not found' });
-     res.json({ success: true, data: car });
-   } catch (error) {
-     res.status(500).json({ error: error.message });
-   }
- };
+exports.getById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!parsePositiveInt(id)) {
+      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+    }
+    const car = await Car.findByPk(id, {
+      attributes: { exclude: ['imageData'] },
+      include: ['user']
+    });
+    res.json({ success: true, data: car });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// Obtener imagen específica (solo desde disco)
+exports.getImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!parsePositiveInt(id)) {
+      return res.status(400).json({ error: 'ID de carro inválido' });
+    }
+    const car = await Car.findByPk(id, { attributes: ['imageName', 'imageType'] });
+    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
 
- // Obtener imagen específica
- exports.getImage = async (req, res) => {
-   try {
-     const { id } = req.params;
-     const car = await Car.findByPk(id, { attributes: ['imageData', 'imageType', 'imageName'] });
-     if (!car || !car.imageData) {
-       return res.status(404).json({ error: 'Imagen no encontrada' });
-     }
-     res.set({
-       'Content-Type': car.imageType || 'image/jpeg',
-       'Content-Length': car.imageData.length,
-       'Content-Disposition': `inline; filename="${car.imageName || 'car_image'}"`
-     });
-     res.send(car.imageData);
-   } catch (error) {
-     res.status(500).json({ error: error.message });
-   }
- };
+    // Servir desde disco
+    if (car.imageName) {
+      const diskPath = path.join(UPLOADS_DIR, car.imageName);
+      if (fs.existsSync(diskPath)) {
+        return res.type(car.imageType || 'image/jpeg').sendFile(diskPath);
+      }
+    }
+    return res.status(404).json({ error: 'Imagen no encontrada' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
  // Crear carro
  exports.create = async (req, res) => {
@@ -85,6 +180,32 @@
      }
 
      const car = await Car.create(carData);
+
+    // Guardar imagen en disco tras crear
+    if (imageData) {
+      const buffer = Buffer.from(imageData, 'base64');
+      const baseName = `car_${car.id}_${Date.now()}`;
+      const mime = imageType || 'image/jpeg';
+      const { filename, size } = await writeImageFile(buffer, baseName, mime);
+      await car.update({
+        imageName: filename,
+        imageType: mime,
+        imageSize: size || imageSize
+      });
+    }
+
+    // Guardar imagen en disco tras crear
+    if (imageData) {
+      const buffer = Buffer.from(imageData, 'base64');
+      const baseName = `car_${car.id}_${Date.now()}`;
+      const mime = imageType || 'image/jpeg';
+      const { filename, size } = await writeImageFile(buffer, baseName, mime);
+      await car.update({
+        imageName: filename,
+        imageType: mime,
+        imageSize: size || imageSize
+      });
+    }
 
      if (req.io) {
        const carResponse = car.toJSON();
@@ -428,7 +549,7 @@
  exports.statsCount = async (req, res) => {
    try {
      const totalCars = await Car.count({ where: { deletedAt: null } });
-     const totalWithImages = await Car.count({ where: { deletedAt: null, imageData: { [Op.ne]: null } } });
+     const totalWithImages = await Car.count({ where: { deletedAt: null, imageName: { [Op.ne]: null } } });
      const totalWithLocation = await Car.count({ where: { deletedAt: null, location: { [Op.ne]: null } } });
      const deletedCars = await Car.count({ where: { deletedAt: { [Op.ne]: null } }, paranoid: false });
      res.json({ success: true, data: { total: totalCars, with_images: totalWithImages, with_location: totalWithLocation, deleted: deletedCars } });
@@ -436,3 +557,52 @@
      res.status(500).json({ success: false, error: 'Error interno del servidor al obtener estadísticas' });
    }
  };
+
+const { Car } = require('../models');
+const path = require('path');
+
+exports.createCar = async (req, res) => {
+  try {
+    const { brand, model, licensePlate, userId, location } = req.body;
+    let imagePath = null;
+    if (req.file) {
+      imagePath = `/uploads/cars/${req.file.filename}`;
+    }
+    const car = await Car.create({
+      brand,
+      model,
+      licensePlate,
+      userId,
+      location,
+      image: imagePath
+    });
+    res.status(201).json({ success: true, data: car });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.updateCar = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const car = await Car.findByPk(id);
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
+
+    const { brand, model, licensePlate, userId, location } = req.body;
+    let imagePath = car.image;
+    if (req.file) {
+      imagePath = `/uploads/cars/${req.file.filename}`;
+    }
+    await car.update({
+      brand,
+      model,
+      licensePlate,
+      userId,
+      location,
+      image: imagePath
+    });
+    res.json({ success: true, data: car });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};

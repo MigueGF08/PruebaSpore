@@ -3,6 +3,7 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -22,6 +23,19 @@ app.use(cors({
 
 app.options('*', cors()); // Habilitar preflight para todas las rutas
 app.use(express.json({ limit: '10mb' }));
+
+// Crear carpeta de uploads si no existe y servirla de forma estática
+const UPLOADS_ROOT = path.join(__dirname, 'uploads');
+try {
+  fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+  fs.mkdirSync(path.join(UPLOADS_ROOT, 'cars'), { recursive: true });
+} catch (e) {
+  console.error('No se pudo crear el directorio de uploads:', e.message);
+}
+app.use('/uploads', express.static(UPLOADS_ROOT));
+
+// Servir archivos estáticos de imágenes
+app.use('/uploads/cars', express.static(path.join(__dirname, 'uploads/cars')));
 
 // Crear servidor HTTP para Socket.io
 const server = http.createServer(app);

@@ -37,16 +37,21 @@
     </nav>
 
     <!-- Sección de Carros Registrados -->
-    <section class="carros-registrados">
+  <section class="carros-registrados">
+      <!-- Botón filtro esquina -->
+      <button class="filter-toggle" @click="showActiveFilterCars = !showActiveFilterCars">🔎 Filtro</button>
       <h2 class="text-2xl font-bold text-[#00f0ff] drop-shadow mb-4">Carros Registrados</h2>
 
-      <div v-if="loading" class="loading alert alert-info">Cargando carros...</div>
-      <div v-if="errorMessage" class="error-text alert alert-error">{{ errorMessage }}</div>
+      <div v-if="showActiveFilterCars" class="filter-panel">
+        <input v-model="searchQueryCars" placeholder="Buscar (marca, modelo, placa, color, userId)" class="search-input" />
+        <button class="apply-btn" @click="activePage = 1; fetchCars()">Aplicar</button>
+        <button class="clear-search-btn" @click="searchQueryCars = ''; activePage = 1; fetchCars()">Limpiar</button>
+      </div>
 
       <div v-else>
         <div class="car-list">
           <div
-            v-for="car in paginatedActiveCars"
+            v-for="car in cars"
             :key="car.id"
             class="car-card neo-card"
           >
@@ -90,21 +95,28 @@
             </div>
           </div>
         </div>
-        <!-- Paginado carros activos -->
-        <div v-if="activeCars.length > carsPerPage" class="pagination">
+        <!-- Paginado carros activos (desde backend) -->
+        <div class="pagination">
           <button @click="prevActivePage" :disabled="activePage === 1" class="pagination-btn">&lt;</button>
-          <span>Página {{ activePage }} de {{ totalActivePages }}</span>
-          <button @click="nextActivePage" :disabled="activePage === totalActivePages" class="pagination-btn">&gt;</button>
+          <span>Página {{ activePage }} de {{ activeTotalPages }}</span>
+          <button @click="nextActivePage" :disabled="activePage === activeTotalPages" class="pagination-btn">&gt;</button>
         </div>
       </div>
     </section>
 
     <!-- Sección de Carros Eliminados -->
     <section class="carros-eliminados" v-if="deletedCars.length > 0">
+      <!-- Botón filtro esquina eliminados -->
+      <button class="filter-toggle" @click="showDeletedFilterCars = !showDeletedFilterCars">🔎 Filtro</button>
       <h2 class="text-2xl font-bold text-[#ff49db] drop-shadow mb-4">Carros Eliminados</h2>
-      <div class="car-list">
+      <div v-if="showDeletedFilterCars" class="filter-panel">
+        <input v-model="searchDeletedCars" placeholder="Buscar eliminados (marca, modelo, placa, color, userId)" class="search-input" />
+        <button class="apply-btn" @click="deletedPage = 1; fetchCars()">Aplicar</button>
+        <button class="clear-search-btn" @click="searchDeletedCars = ''; deletedPage = 1; fetchCars()">Limpiar</button>
+      </div>
+      <div class="car-list" v-else>
         <div
-          v-for="car in paginatedDeletedCars"
+          v-for="car in deletedCars"
           :key="car.id"
           class="car-card deleted neo-card"
         >
@@ -143,11 +155,11 @@
           </div>
         </div>
       </div>
-      <!-- Paginado carros eliminados -->
-      <div v-if="deletedCars.length > carsPerPage" class="pagination">
+      <!-- Paginado carros eliminados (desde backend) -->
+      <div class="pagination">
         <button @click="prevDeletedPage" :disabled="deletedPage === 1" class="pagination-btn">&lt;</button>
-        <span>Página {{ deletedPage }} de {{ totalDeletedPages }}</span>
-        <button @click="nextDeletedPage" :disabled="deletedPage === totalDeletedPages" class="pagination-btn">&gt;</button>
+        <span>Página {{ deletedPage }} de {{ deletedTotalPages }}</span>
+        <button @click="nextDeletedPage" :disabled="deletedPage === deletedTotalPages" class="pagination-btn">&gt;</button>
       </div>
     </section>
 
@@ -287,6 +299,7 @@
 import { ref, onMounted, computed, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
+import { apiUrl } from '../lib/api'
 
 // Importar Leaflet
 import L from 'leaflet'
@@ -315,10 +328,15 @@ const saving = ref(false)
 let map = null
 let marker = null
 
-// Computed para separar carros activos
-const activeCars = computed(() => {
-  return cars.value.filter(car => !car.deletedAt)
-})
+// Filtros y toggles de UI
+const searchQueryCars = ref('')
+const searchDeletedCars = ref('')
+const showActiveFilterCars = ref(false)
+const showDeletedFilterCars = ref(false)
+
+// Total de páginas devuelto por backend
+const activeTotalPages = ref(1)
+const deletedTotalPages = ref(1)
 
 // Función para verificar si un carro tiene imagen
 // Opción A: si no hay data embebida, intentamos cargarla por ID desde el backend
@@ -360,7 +378,7 @@ const getImageUrl = (car) => {
     
     // Fallback: intentar obtener desde el backend por ID
     if (car.id) {
-      return `http://localhost:3000/api/carros/${car.id}/imagen`;
+      return apiUrl(`/api/carros/${car.id}/imagen`);
     }
     return '';
   } catch (error) {
@@ -382,21 +400,24 @@ const handleImageError = (event) => {
   }
 }
 
-// Función para obtener todos los carros
+// Función para obtener carros (paginado backend)
 async function fetchCars() {
   loading.value = true
   errorMessage.value = ''
   try {
-    // Obtener carros activos
-    const activeRes = await fetch('http://localhost:3000/api/carros')
+    // Obtener carros activos (backend pagination + filtro q)
+    const activeUrl = apiUrl(`/api/carros?page=${activePage.value}&limit=${carsPerPage}${searchQueryCars.value ? `&q=${encodeURIComponent(searchQueryCars.value)}` : ''}`)
+    const activeRes = await fetch(activeUrl)
     const activeData = await activeRes.json()
     
-    // Obtener carros eliminados
-    const deletedRes = await fetch('http://localhost:3000/api/carros/deleted')
+    // Obtener carros eliminados (backend pagination + filtro q)
+    const deletedUrl = apiUrl(`/api/carros/deleted?page=${deletedPage.value}&limit=${carsPerPage}${searchDeletedCars.value ? `&q=${encodeURIComponent(searchDeletedCars.value)}` : ''}`)
+    const deletedRes = await fetch(deletedUrl)
     const deletedData = await deletedRes.json()
     
     if (activeData.success) {
       cars.value = activeData.data
+      activeTotalPages.value = activeData.totalPages || 1
       console.log('Carros activos cargados:', cars.value)
     } else {
       errorMessage.value = activeData.error || 'No se pudieron cargar los carros activos'
@@ -404,11 +425,11 @@ async function fetchCars() {
     
     if (deletedData.success) {
       deletedCars.value = deletedData.data
+      deletedTotalPages.value = deletedData.totalPages || 1
       console.log('Carros eliminados cargados:', deletedCars.value)
     }
     
-    activePage.value = 1
-    deletedPage.value = 1
+    // No reiniciamos páginas aquí para permitir navegación
     
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener carros'
@@ -598,7 +619,7 @@ async function saveCarChanges() {
       updateData.imageSize = editingCar.value.imageSize
     }
 
-    const res = await fetch(`http://localhost:3000/api/carros/${editingCar.value.id}/edit`, {
+    const res = await fetch(apiUrl(`/api/carros/${editingCar.value.id}/edit`), {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
@@ -654,7 +675,7 @@ async function deleteCar(id) {
   if (!result.isConfirmed) return
 
   try {
-    const res = await fetch(`http://localhost:3000/api/carros/${id}`, {
+    const res = await fetch(apiUrl(`/api/carros/${id}`), {
       method: 'DELETE'
     })
     
@@ -706,7 +727,7 @@ async function restoreCar(id) {
   if (!result.isConfirmed) return
 
   try {
-    const res = await fetch(`http://localhost:3000/api/carros/${id}/restore`, {
+    const res = await fetch(apiUrl(`/api/carros/${id}/restore`), {
       method: 'POST'
     })
     
@@ -768,32 +789,33 @@ onUnmounted(() => {
 
 const carsPerPage = 10
 
-// Paginación carros activos
+// Paginación (controlada por backend)
 const activePage = ref(1)
-const totalActivePages = computed(() => Math.ceil(activeCars.value.length / carsPerPage))
-const paginatedActiveCars = computed(() => {
-  const start = (activePage.value - 1) * carsPerPage
-  return activeCars.value.slice(start, start + carsPerPage)
-})
 function nextActivePage() {
-  if (activePage.value < totalActivePages.value) activePage.value++
+  if (activePage.value < activeTotalPages.value) {
+    activePage.value++
+    fetchCars()
+  }
 }
 function prevActivePage() {
-  if (activePage.value > 1) activePage.value--
+  if (activePage.value > 1) {
+    activePage.value--
+    fetchCars()
+  }
 }
 
-// Paginación carros eliminados
 const deletedPage = ref(1)
-const totalDeletedPages = computed(() => Math.ceil(deletedCars.value.length / carsPerPage))
-const paginatedDeletedCars = computed(() => {
-  const start = (deletedPage.value - 1) * carsPerPage
-  return deletedCars.value.slice(start, start + carsPerPage)
-})
 function nextDeletedPage() {
-  if (deletedPage.value < totalDeletedPages.value) deletedPage.value++
+  if (deletedPage.value < deletedTotalPages.value) {
+    deletedPage.value++
+    fetchCars()
+  }
 }
 function prevDeletedPage() {
-  if (deletedPage.value > 1) deletedPage.value--
+  if (deletedPage.value > 1) {
+    deletedPage.value--
+    fetchCars()
+  }
 }
 </script>
 
