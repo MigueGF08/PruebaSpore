@@ -38,17 +38,30 @@
 
     <!-- Sección de Carros Registrados -->
   <section class="carros-registrados">
-      <!-- Botón filtro esquina -->
-      <button class="filter-toggle" @click="showActiveFilterCars = !showActiveFilterCars">🔎 Filtro</button>
       <h2 class="text-2xl font-bold text-[#00f0ff] drop-shadow mb-4">Carros Registrados</h2>
 
-      <div v-if="showActiveFilterCars" class="filter-panel">
-        <input v-model="searchQueryCars" placeholder="Buscar (marca, modelo, placa, color, userId)" class="search-input" />
-        <button class="apply-btn" @click="activePage = 1; fetchCars()">Aplicar</button>
-        <button class="clear-search-btn" @click="searchQueryCars = ''; activePage = 1; fetchCars()">Limpiar</button>
+      <!-- Barra de búsqueda siempre visible -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input 
+            v-model="searchQueryCars" 
+            @input="activePage = 1; fetchCars()" 
+            placeholder="Buscar por marca, modelo, placa, color o ID de usuario..." 
+            class="search-input" 
+          />
+          <button 
+            v-if="searchQueryCars" 
+            @click="searchQueryCars = ''; activePage = 1; fetchCars()" 
+            class="clear-btn"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      <div v-else>
+      <div>
         <div class="car-list">
           <div
             v-for="car in cars"
@@ -106,15 +119,30 @@
 
     <!-- Sección de Carros Eliminados -->
     <section class="carros-eliminados" v-if="deletedCars.length > 0">
-      <!-- Botón filtro esquina eliminados -->
-      <button class="filter-toggle" @click="showDeletedFilterCars = !showDeletedFilterCars">🔎 Filtro</button>
       <h2 class="text-2xl font-bold text-[#ff49db] drop-shadow mb-4">Carros Eliminados</h2>
-      <div v-if="showDeletedFilterCars" class="filter-panel">
-        <input v-model="searchDeletedCars" placeholder="Buscar eliminados (marca, modelo, placa, color, userId)" class="search-input" />
-        <button class="apply-btn" @click="deletedPage = 1; fetchCars()">Aplicar</button>
-        <button class="clear-search-btn" @click="searchDeletedCars = ''; deletedPage = 1; fetchCars()">Limpiar</button>
+      
+      <!-- Barra de búsqueda siempre visible -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input 
+            v-model="searchDeletedCars" 
+            @input="deletedPage = 1; fetchCars()" 
+            placeholder="Buscar eliminados por marca, modelo, placa, color o ID..." 
+            class="search-input" 
+          />
+          <button 
+            v-if="searchDeletedCars" 
+            @click="searchDeletedCars = ''; deletedPage = 1; fetchCars()" 
+            class="clear-btn"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
       </div>
-      <div class="car-list" v-else>
+
+      <div class="car-list">
         <div
           v-for="car in deletedCars"
           :key="car.id"
@@ -164,7 +192,7 @@
     </section>
 
     <!-- Modal de Edición -->
-    <div v-if="showEditModal" class="modal-overlay">
+    <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
       <div class="modal-content">
         <div class="modal-header">
           <h3>Editar Carro (ID: {{ editingCar.id }})</h3>
@@ -844,36 +872,100 @@ function prevDeletedPage() {
 .nav-link { color: #fff; text-decoration: none; font-weight: bold; padding: 12px 8px; display: block; }
 .nav-link.router-link-exact-active,
 .nav-link.router-link-active { background: #369870; border-radius: 6px; }
-/* --------- Modal de Edición ---------- */
+
+/* --------- Barra de Búsqueda ---------- */
+.search-bar {
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 4px 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input-wrapper:focus-within {
+  border-color: #42b983;
+  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.2);
+}
+
+.search-icon {
+  font-size: 20px;
+  margin-right: 10px;
+  color: #6b7280;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px 8px;
+  font-size: 15px;
+  color: #111827;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.clear-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.clear-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+/* --------- Modal de Edición (Estilo UsuariosRegistrados) ---------- */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  pointer-events: none; /* permite scroll y eventos en el fondo */
+  z-index: 1100;
+  overflow-y: auto;
 }
 
 .modal-content {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
+  background: white;
+  border-radius: 10px;
   width: 100%;
-  max-width: 500px; /* tamaño original */
-  max-height: 90vh; /* mantener visible dentro del viewport */
-  background: #ffffff;
-  border-radius: 12px;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 20px auto;
   border: 1px solid #e5e7eb;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-  overflow-y: auto;
-  padding: 0; /* el padding va en el header y el form como en Usuarios */
-  pointer-events: auto; /* el modal sigue siendo interactivo */
 }
 
 .modal-header {
@@ -883,7 +975,12 @@ function prevDeletedPage() {
   padding: 20px;
   border-bottom: 1px solid #eee;
 }
-.modal-header h3 { margin: 0; color: #333; }
+
+.modal-header h3 { 
+  margin: 0; 
+  color: #333; 
+}
+
 .close-btn {
   background: none;
   border: none;
@@ -898,23 +995,40 @@ function prevDeletedPage() {
   justify-content: center;
   border-radius: 50%;
 }
-.close-btn:hover { color: #333; background: #f0f0f0; }
 
-.edit-form { padding: 20px; }
-.form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-.form-group { flex: 1; margin-bottom: 22px; }
+.close-btn:hover { 
+  color: #333; 
+  background: #f0f0f0; 
+}
+
+.edit-form { 
+  padding: 20px; 
+}
+
+.form-row { 
+  display: flex; 
+  gap: 15px; 
+  margin-bottom: 15px; 
+}
+
+.form-group { 
+  flex: 1; 
+  margin-bottom: 22px; 
+}
+
 .form-group label {
   display: block;
   margin: 16px 0 8px 0;
   font-weight: 700;
-  color: #374151; /* slate-700 */
+  color: #374151;
   text-align: center;
   font-size: 18px;
 }
+
 .form-input {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #e5e7eb; /* gray-200 */
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 16px;
   box-sizing: border-box;
@@ -922,13 +1036,22 @@ function prevDeletedPage() {
   color: #111827;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.form-input:focus {
-  outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
+
+.form-input:focus { 
+  outline: none; 
+  border-color: #42b983; 
+  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2); 
 }
 
-.form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; padding-top: 16px; border-top: 1px solid #eee; }
+.form-actions { 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 12px; 
+  margin-top: 10px; 
+  padding-top: 16px; 
+  border-top: 1px solid #eee; 
+}
+
 .cancel-btn,
 .save-btn {
   padding: 12px 24px;
@@ -939,11 +1062,32 @@ function prevDeletedPage() {
   font-weight: 600;
   transition: background 0.3s, transform 0.2s;
 }
-.cancel-btn { background: #95a5a6; color: white; }
-.cancel-btn:hover { background: #7f8c8d; transform: translateY(-2px); }
-.save-btn { background: #42b983; color: white; }
-.save-btn:hover:not(:disabled) { background: #369870; transform: translateY(-2px); }
-.save-btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
+
+.cancel-btn { 
+  background: #95a5a6; 
+  color: white; 
+}
+
+.cancel-btn:hover { 
+  background: #7f8c8d; 
+  transform: translateY(-2px); 
+}
+
+.save-btn { 
+  background: #42b983; 
+  color: white; 
+}
+
+.save-btn:hover:not(:disabled) { 
+  background: #369870; 
+  transform: translateY(-2px); 
+}
+
+.save-btn:disabled { 
+  background: #bdc3c7; 
+  cursor: not-allowed; 
+  transform: none; 
+}
 
 /* Lista de tarjetas en 3 columnas */
 .car-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }

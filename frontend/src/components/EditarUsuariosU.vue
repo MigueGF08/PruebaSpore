@@ -210,6 +210,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
+import { apiUrl } from '../lib/api'
 
 const currentUser = ref(null)
 const loading = ref(false)
@@ -244,7 +245,7 @@ async function fetchCurrentUser() {
       return
     }
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${userId}`)
+    const res = await fetch(apiUrl(`/api/usuarios/${userId}`))
     if (!res.ok) throw new Error('Error al obtener información del usuario')
     
     const data = await res.json()
@@ -320,7 +321,7 @@ async function saveProfileChanges() {
       phone: editingUser.value.phone
     }
 
-    const res = await fetch(`http://localhost:3000/api/usuarios/${editingUser.value.id}`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${editingUser.value.id}`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -413,7 +414,7 @@ async function changePassword() {
 
   changingPassword.value = true
   try {
-    const res = await fetch(`http://localhost:3000/api/usuarios/${currentUser.value.id}/password`, {
+    const res = await fetch(apiUrl(`/api/usuarios/${currentUser.value.id}/password`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

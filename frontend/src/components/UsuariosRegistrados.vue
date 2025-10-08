@@ -49,18 +49,26 @@
       <button class="filter-toggle" @click="openFilterModal">🔎 Filtro</button>
       <h2>Usuarios Registrados</h2>
 
-      <!-- Barra de búsqueda -->
-      <div class="search-container">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Buscar por nombre, email, teléfono o ID..."
-          class="search-input"
-          @input="handleSearch"
-        />
-        <button v-if="searchQuery" @click="clearSearch" class="clear-search-btn">
-          &times;
-        </button>
+      <!-- Barra de búsqueda moderna -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Buscar por nombre, email, teléfono o ID..."
+            class="search-input"
+            @input="handleSearch"
+          />
+          <button 
+            v-if="searchQuery" 
+            @click="clearSearch" 
+            class="clear-btn"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading">Cargando usuarios...</div>
@@ -103,8 +111,9 @@
         <div
           v-for="user in filteredActiveUsers"
           :key="user.id"
-          class="user-card"
+          class="user-card neo-card"
         >
+          <!-- Imagen del usuario -->
           <div class="user-avatar">
             <span>👤</span>
           </div>
@@ -113,26 +122,31 @@
             <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
-            <p><strong>Rol:</strong> {{ user.role }}</p>
+            <p>
+              <strong>Rol:</strong> 
+              <span class="user-role" :class="'role-' + user.role.toLowerCase()">
+                {{ user.role }}
+              </span>
+            </p>
           </div>
           <div class="user-actions">
             <button
               @click="openEditModal(user)"
               class="edit-btn"
             >
-              Editar
+              <i class="fas fa-edit"></i> Editar
             </button>
             <button
               @click="openResetPasswordModal(user)"
               class="reset-password-btn"
             >
-              Rest. Pass
+              <i class="fas fa-key"></i> Rest. Pass
             </button>
             <button
               @click="deleteUser(user.id)"
               class="delete-btn"
             >
-              Eliminar
+              <i class="fas fa-trash"></i> Eliminar
             </button>
           </div>
         </div>
@@ -157,17 +171,25 @@
       <button class="filter-toggle" @click="openDeletedFilterModal">🔎 Filtro</button>
       <h2>Usuarios Eliminados</h2>
       
-      <!-- Barra de búsqueda para usuarios eliminados -->
-      <div class="search-container">
-        <input
-          v-model="searchDeletedQuery"
-          type="text"
-          placeholder="Buscar usuarios eliminados..."
-          class="search-input"
-        />
-        <button v-if="searchDeletedQuery" @click="searchDeletedQuery = ''" class="clear-search-btn">
-          &times;
-        </button>
+      <!-- Barra de búsqueda moderna para usuarios eliminados -->
+      <div class="search-bar">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="searchDeletedQuery"
+            type="text"
+            placeholder="Buscar usuarios eliminados..."
+            class="search-input"
+          />
+          <button 
+            v-if="searchDeletedQuery" 
+            @click="searchDeletedQuery = ''" 
+            class="clear-btn"
+            title="Limpiar búsqueda"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       
       <!-- Modal de Filtro (Eliminados) -->
@@ -207,8 +229,9 @@
         <div
           v-for="user in filteredDeletedUsers"
           :key="user.id"
-          class="user-card deleted"
+          class="user-card neo-card deleted"
         >
+          <!-- Imagen del usuario -->
           <div class="user-avatar">
             <span>👤</span>
           </div>
@@ -217,7 +240,12 @@
             <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
-            <p><strong>Rol:</strong> {{ user.role }}</p>
+            <p>
+              <strong>Rol:</strong> 
+              <span class="user-role" :class="'role-' + user.role.toLowerCase()">
+                {{ user.role }}
+              </span>
+            </p>
             <p><strong>Eliminado el:</strong> {{ formatDate(user.deletedAt) }}</p>
           </div>
           <div class="user-actions">
@@ -225,7 +253,7 @@
               @click="restoreUser(user.id)"
               class="restore-btn"
             >
-              Restaurar
+              <i class="fas fa-undo"></i> Restaurar
             </button>
           </div>
         </div>
@@ -354,81 +382,126 @@ function clearDeletedFilter() {
       </div>
     </div>
 
-    <!-- Modal de Edición -->
+    <!-- Modal de Edición Mejorado -->
     <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content" @click.stop>
+      <div class="modal-content edit-user-modal" @click.stop>
         <div class="modal-header">
-          <h3>Editar Usuario (ID: {{ editingUser.id }})</h3>
-          <button @click="closeEditModal" class="close-btn">&times;</button>
+          <div class="modal-title">
+            <i class="fas fa-user-edit modal-icon"></i>
+            <h3>Editar Usuario <span class="user-id">#{{ editingUser.id }}</span></h3>
+          </div>
+          <button @click="closeEditModal" class="close-btn">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form @submit.prevent="saveUserChanges" class="edit-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editFirstName">Nombre:</label>
-              <input
-                id="editFirstName"
-                v-model="editingUser.firstName"
-                type="text"
-                class="form-input"
-                required
-              />
+        
+        <div class="modal-body">
+          <form @submit.prevent="saveUserChanges" class="edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <div class="input-group">
+                  <label for="editFirstName">
+                    <i class="fas fa-user input-icon"></i>
+                    <span>Nombre</span>
+                  </label>
+                  <input
+                    id="editFirstName"
+                    v-model="editingUser.firstName"
+                    type="text"
+                    class="form-input"
+                    placeholder="Ingrese el nombre"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="input-group">
+                  <label for="editLastName">
+                    <i class="fas fa-user input-icon"></i>
+                    <span>Apellido</span>
+                  </label>
+                  <input
+                    id="editLastName"
+                    v-model="editingUser.lastName"
+                    type="text"
+                    class="form-input"
+                    placeholder="Ingrese el apellido"
+                    required
+                  />
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
-              <label for="editLastName">Apellido:</label>
-              <input
-                id="editLastName"
-                v-model="editingUser.lastName"
-                type="text"
-                class="form-input"
-                required
-              />
+              <div class="input-group">
+                <label for="editEmail">
+                  <i class="fas fa-envelope input-icon"></i>
+                  <span>Correo Electrónico</span>
+                </label>
+                <input
+                  id="editEmail"
+                  v-model="editingUser.email"
+                  type="email"
+                  class="form-input"
+                  placeholder="usuario@ejemplo.com"
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div class="form-group">
-            <label for="editEmail">Email:</label>
-            <input
-              id="editEmail"
-              v-model="editingUser.email"
-              type="email"
-              class="form-input"
-              required
-            />
-          </div>
+            <div class="form-group">
+              <div class="input-group">
+                <label for="editPhone">
+                  <i class="fas fa-phone input-icon"></i>
+                  <span>Teléfono</span>
+                </label>
+                <div class="phone-input-container">
+                  <span class="phone-prefix">+57</span>
+                  <input
+                    id="editPhone"
+                    v-model="editingUser.phone"
+                    type="tel"
+                    class="form-input phone-input"
+                    placeholder="300 123 4567"
+                  />
+                </div>
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="editPhone">Teléfono:</label>
-              <input
-                id="editPhone"
-                v-model="editingUser.phone"
-                type="tel"
-                class="form-input"
-              />
-          </div>
+            <div class="form-group">
+              <div class="input-group">
+                <label for="editRole">
+                  <i class="fas fa-user-tag input-icon"></i>
+                  <span>Rol del Usuario</span>
+                </label>
+                <div class="select-wrapper">
+                  <select
+                    id="editRole"
+                    v-model="editingUser.role"
+                    class="form-input select-input"
+                    required
+                  >
+                    <option value="user">Usuario</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                  <i class="fas fa-chevron-down select-arrow"></i>
+                </div>
+              </div>
+            </div>
 
-          <div class="form-group">
-            <label for="editRole">Rol:</label>
-            <select
-              id="editRole"
-              v-model="editingUser.role"
-              class="form-input"
-              required
-            >
-              <option value="user">Usuario</option>
-              <option value="admin">Administrador</option>
-            </select>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" @click="closeEditModal" class="cancel-btn">
-              Cancelar
-            </button>
-            <button type="submit" class="save-btn" :disabled="saving">
-              {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
-            </button>
-          </div>
-        </form>
+            <div class="form-actions">
+              <button type="button" @click="closeEditModal" class="cancel-btn">
+                <i class="fas fa-times"></i> Cancelar
+              </button>
+              <button type="submit" class="save-btn" :disabled="saving">
+                <i v-if="!saving" class="fas fa-save"></i>
+                <i v-else class="fas fa-spinner fa-spin"></i>
+                {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -1066,45 +1139,71 @@ onMounted(fetchUsers)
 }
 
 /* Buscador: fondo negro, texto blanco, pill */
-.search-container {
-  position: relative;
-  margin: 20px 0;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.search-container .search-input {
+/* --------- Barra de Búsqueda Moderna ---------- */
+.search-bar {
+  margin-bottom: 24px;
   width: 100%;
-  padding: 12px 40px 12px 16px;
-  background: #111827;
-  color: #ffffff;
-  border: 1px solid #333;
-  border-radius: 9999px;
-  font-size: 16px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
-  transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-.search-container .search-input::placeholder {
-  color: #e5e7eb;
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 4px 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.search-container .search-input:focus {
-  outline: none;
+.search-input-wrapper:focus-within {
   border-color: #42b983;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.25);
+  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.2);
 }
 
-.search-container .clear-search-btn {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
+.search-icon {
   font-size: 20px;
+  margin-right: 10px;
+  color: #6b7280;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px 8px;
+  font-size: 15px;
+  color: #111827;
+  background: transparent;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.clear-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.clear-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
 }
 
 .modal-overlay {
@@ -1117,16 +1216,385 @@ onMounted(fetchUsers)
   z-index: 1100;
 }
 
-.search-container .clear-search-btn:hover {
-  background: #1f2937;
-}
-
-/* 3 columnas en desktop */
+/* Estilo de tarjetas de usuario */
 .user-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
+  width: 100%;
+  margin: 0 auto;
 }
+
+.user-card {
+  background: #ffffff;
+  border: 1px solid #e1e5e9;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.user-avatar {
+  width: 100%;
+  height: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f8f9fa;
+  font-size: 60px;
+  color: #6c757d;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.user-details {
+  padding: 16px;
+  width: 100%;
+  color: #111827;
+}
+
+.user-details p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.user-role {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.role-admin {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-user {
+  background-color: #e0f7fa;
+  color: #00838f;
+}
+
+.user-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px;
+  border-top: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+/* Estilos para los botones */
+.edit-btn,
+.reset-password-btn,
+.delete-btn,
+.restore-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #42b983, #2fae77);
+  color: #fff;
+}
+
+.edit-btn:hover {
+  background: linear-gradient(135deg, #3aa777, #2a9b6c);
+  transform: translateY(-2px);
+}
+
+.reset-password-btn {
+  background: linear-gradient(135deg, #f39c12, #d98a0f);
+  color: #fff;
+}
+
+.reset-password-btn:hover {
+  background: linear-gradient(135deg, #e08e0b, #c27d0a);
+  transform: translateY(-2px);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #e74c3c, #d64232);
+  color: #fff;
+}
+
+.delete-btn:hover {
+  background: linear-gradient(135deg, #cc4435, #b83a2c);
+  transform: translateY(-2px);
+}
+
+.restore-btn {
+  background: linear-gradient(135deg, #3498db, #2b86c2);
+  color: #fff;
+  width: 100%;
+}
+
+.restore-btn:hover {
+  background: linear-gradient(135deg, #2f8ac7, #2475a8);
+  transform: translateY(-2px);
+}
+
+/* Estilo para tarjetas de usuarios eliminados */
+.user-card.deleted {
+  opacity: 0.8;
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card.deleted::after {
+  content: "ELIMINADO";
+  position: absolute;
+  top: 10px;
+  right: -30px;
+  background: #e74c3c;
+  color: white;
+  padding: 3px 30px;
+  font-size: 12px;
+  font-weight: bold;
+  transform: rotate(45deg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Estilos para el modal de edición mejorado */
+.edit-user-modal {
+  max-width: 580px;
+  width: 90%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.edit-user-modal .modal-header {
+  background: linear-gradient(135deg, #42b983, #2fae77);
+  color: white;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-icon {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.edit-user-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: white;
+}
+
+.user-id {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.modal-body {
+  padding: 25px;
+  background: #f8fafc;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.input-icon {
+  margin-right: 8px;
+  color: #6b7280;
+  width: 18px;
+  text-align: center;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  background-color: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.form-input:focus {
+  border-color: #42b983;
+  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
+  outline: none;
+}
+
+.phone-input-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.phone-prefix {
+  padding: 0 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 0.9rem;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid #e5e7eb;
+}
+
+.phone-input {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-left: 12px !important;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.select-input {
+  appearance: none;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cancel-btn {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #42b983, #2fae77);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.save-btn:hover {
+  background: linear-gradient(135deg, #3aa777, #2a9b6c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.save-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Animaciones */
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+/* Efectos de hover en los inputs */
+.form-input:not(:focus):hover {
+  border-color: #9ca3af;
+}
+
+/* Estilos para el estado de carga */
+.fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
 
 /* Neutral modal header (simple divider) */
 .modal-header {
@@ -1255,11 +1723,30 @@ onMounted(fetchUsers)
   .nav-link { text-align: center; }
   .form-row { flex-direction: column; gap: 0; }
   .modal-content { width: 95%; margin: 10px; }
-  .search-container { margin: 15px 0; }
+  .search-bar { margin: 15px 0; }
 }
+@media (max-width: 1024px) {
+  .user-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .user-list {
     grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  .user-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .edit-btn,
+  .reset-password-btn,
+  .delete-btn,
+  .restore-btn {
+    width: 100%;
+    padding: 10px;
   }
 }
 </style>

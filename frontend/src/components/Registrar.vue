@@ -107,7 +107,6 @@
     </form>
 
     <p class="login-link">
-      Already have an account? <router-link to="/">Login here</router-link>
     </p>
   </div>
 </template>
@@ -116,6 +115,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
+import { apiUrl } from '../lib/api'
 
 export default {
   name: 'RegisterView',
@@ -214,7 +214,7 @@ export default {
       loading.value = true
 
       try {
-        const response = await fetch('http://localhost:3000/api/usuarios/register', {
+        const response = await fetch(apiUrl('/api/usuarios/register'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

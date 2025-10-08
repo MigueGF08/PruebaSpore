@@ -112,6 +112,7 @@ import { ref, onMounted } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import Swal from 'sweetalert2'
+import { apiUrl } from '../lib/api'
 
 // Estado reactivo
 const selectedUserId = ref('')
@@ -189,7 +190,7 @@ const fetchUsers = async () => {
     loadingUsers.value = true
     usersError.value = ''
     try {
-        const response = await fetch('http://localhost:3000/api/usuarios')
+        const response = await fetch(apiUrl('/api/usuarios'))
         
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status}`)
@@ -316,7 +317,7 @@ const submitForm = async () => {
             carData.imageSize = imageFile.value.size
         }
 
-        const response = await fetch('http://localhost:3000/api/carros', {
+        const response = await fetch(apiUrl('/api/carros'), {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',

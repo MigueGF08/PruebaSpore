@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiUrl } from '../lib/api'
 
 const email = ref('')
 const password = ref('')
@@ -13,7 +14,7 @@ async function login() {
   error.value = ''
 
   try {
-    const response = await fetch('http://localhost:3000/api/usuarios/login', {
+    const response = await fetch(apiUrl('/api/usuarios/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
