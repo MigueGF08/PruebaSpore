@@ -285,6 +285,8 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .principal {
     max-width: 600px;
     margin: 40px auto;

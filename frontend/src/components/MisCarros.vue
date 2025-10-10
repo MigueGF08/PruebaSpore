@@ -260,6 +260,8 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .MisCarros {
   max-width: 1200px;
   margin: 0 auto;

@@ -10,20 +10,49 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
   }
-  
-  
+
   Car.init({
     brand: DataTypes.STRING,
     model: DataTypes.STRING,
-    licensePlate: DataTypes.STRING,
-    location: DataTypes.GEOMETRY,
-    image: DataTypes.STRING, // <--- asegúrate que existe este campo
-    userId: DataTypes.INTEGER
+    licensePlate: {
+      type: DataTypes.STRING,
+      field: 'license_plate',
+      allowNull: false,
+      unique: true
+    },
+    location: {
+      type: DataTypes.GEOMETRY,
+      field: 'location'
+    },
+    image: DataTypes.STRING,
+    imageData: {
+      type: DataTypes.BLOB,
+      field: 'image_data'
+    },
+    imageName: {
+      type: DataTypes.STRING,
+      field: 'image_name'
+    },
+    imageType: {
+      type: DataTypes.STRING,
+      field: 'image_type'
+    },
+    imageSize: {
+      type: DataTypes.INTEGER,
+      field: 'image_size'
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      field: 'user_id',
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'Car',
-    paranoid: true
+    tableName: 'Cars',
+    paranoid: true,
+    underscored: true
   });
-  
+
   return Car;
 };

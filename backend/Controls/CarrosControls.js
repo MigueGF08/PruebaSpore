@@ -558,9 +558,6 @@ exports.getImage = async (req, res) => {
    }
  };
 
-const { Car } = require('../models');
-const path = require('path');
-
 exports.createCar = async (req, res) => {
   try {
     const { brand, model, licensePlate, userId, location } = req.body;

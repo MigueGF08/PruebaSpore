@@ -1037,6 +1037,84 @@ function prevDeletedPage() {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+@reference "tailwindcss";
+
+/* Principal container */
+.principal {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 24px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafafa;
+  text-align: center;
+}
+
+.navbar {
+  width: 100%;
+  background: #42b983;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 24px;
+  padding: 0;
+}
+
+.navbar ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.navbar li {
+  margin: 8px 16px;
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  font-weight: bold;
+  padding: 12px 8px;
+  display: block;
+  transition: background 0.2s;
+  border-radius: 4px;
+}
+
+.nav-link.router-link-exact-active,
+.nav-link.router-link-active {
+  background: #369870;
+}
+
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #666;
+  font-size: 18px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  background: #fff;
+  color: #111827;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
 .form-input:focus { 
   outline: none; 
   border-color: #42b983; 

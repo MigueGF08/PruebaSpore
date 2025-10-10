@@ -477,25 +477,16 @@ function logout() {
   sessionStorage.clear()
   console.log('Cerrando sesión...')
 }
-
 // Cargar datos al montar el componente
 onMounted(fetchCurrentUser)
 </script>
 
 <style scoped>
-.principal {
-  max-width: 800px;
-  margin: 40px auto;
-  padding: 24px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  text-align: center;
-}
+@import "tailwindcss/preflight";
+@tailwind utilities;
 
-.navbar {
-  width: 100%;
-  background: #42b983;
+.principal {
+  @apply max-w-[800px] mx-auto p-6 border border-solid border-gray-300 rounded-lg bg-white text-center;
   border-radius: 6px 6px 0 0;
   margin-bottom: 24px;
   padding: 0;

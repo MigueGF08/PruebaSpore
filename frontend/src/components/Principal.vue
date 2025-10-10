@@ -1,41 +1,40 @@
 <template>
-  <div class="principal neo-card p-6">
-    <nav class="navbar bg-slate-800/60 rounded-xl mb-6">
-      <ul class="menu menu-horizontal flex-wrap justify-center">
+  <div class="max-w-4xl mx-auto mt-10 p-6 border rounded-lg bg-gray-50 text-center">
+    <nav class="w-full bg-slate-800/60 rounded-xl mb-6">
+      <ul class="flex flex-wrap justify-center list-none m-0 p-0">
 
-        <li v-if="isAdmin || isUser">
-          <router-link to="/principal" class="nav-link btn btn-ghost" exact>
+        <li v-if="isAdmin || isUser" class="m-2">
+          <router-link to="/principal" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded" exact>
             Principal
           </router-link>
         </li>
-        <li v-if="isAdmin || isUser">
-          <router-link to="/mis-carros" class="nav-link btn btn-ghost">
+        <li v-if="isAdmin || isUser" class="m-2">
+          <router-link to="/mis-carros" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded">
             Mis Carros
           </router-link>
         </li>
-        <li v-if="isAdmin">  
-          <router-link to="/agregar-carro" class="nav-link btn btn-ghost">
+        <li v-if="isAdmin" class="m-2">
+          <router-link to="/agregar-carro" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded">
             Agregar Carros
           </router-link>
         </li>
-        <li v-if="isAdmin">
-          <router-link to="/CarrosRegistrados" class="nav-link btn btn-ghost">
+        <li v-if="isAdmin" class="m-2">
+          <router-link to="/CarrosRegistrados" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded">
             Carros Registrados
           </router-link>
         </li>
-        <li v-if="isAdmin">
-          <router-link to="/UsuariosRegistrados" class="nav-link btn btn-ghost">
+        <li v-if="isAdmin" class="m-2">
+          <router-link to="/UsuariosRegistrados" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded">
             Usuarios
           </router-link>
         </li>
-        <li v-if="isUser">
-          <router-link to="/editar-usuarios-u" class="nav-link btn btn-ghost">
+        <li v-if="isUser" class="m-2">
+          <router-link to="/editar-usuarios-u" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded">
             MiPerfil
-          </router-link>  
-
+          </router-link>
         </li>
-        <li v-if="isAdmin || isUser">
-          <router-link to="/" class="nav-link btn btn-error text-white" @click.native="logout">
+        <li v-if="isAdmin || isUser" class="m-2">
+          <router-link to="/" class="text-white no-underline font-bold p-3 block transition-bg duration-200 rounded bg-red-500" @click.native="logout">
             Cerrar Sesión
           </router-link>
         </li>
@@ -43,39 +42,38 @@
     </nav>
 
     <header>
-      <h1 class="text-3xl font-extrabold text-[#00f0ff] drop-shadow">Bienvenido a la Página Principal</h1>
-      <p class="user-info">Rol actual: <strong>{{ userRole }}</strong></p>
-      <p class="user-info" v-if="userName">Usuario: <strong>{{ userName }}</strong></p>
+      <h1 class="text-3xl font-extrabold text-cyan-400 drop-shadow-lg mb-4">Bienvenido a la Página Principal</h1>
+      <p class="bg-green-100 p-2 rounded inline-block m-1">Rol actual: <strong>{{ userRole }}</strong></p>
+      <p v-if="userName" class="bg-green-100 p-2 rounded inline-block m-1">Usuario: <strong>{{ userName }}</strong></p>
     </header>
 
     <main v-if="hasSession">
-      <p>
+      <p class="text-gray-700 text-base mb-2">
         Encuentra tus carros en cualquier lugar donde esten guardados.
       </p>
-      <p>
+      <p class="text-gray-700 text-base mb-4">
         Utiliza el menú de navegación para acceder a las diferentes secciones.
       </p>
       
-      <!-- Información adicional basada en el rol -->
-      <div class="role-info">
-        <div v-if="isAdmin" class="admin-info">
-          <h3>Funciones de Administrador</h3>
-          <p>Como administrador, tienes acceso a todas las funcionalidades del sistema:</p>
-          <ul>
-            <li>Gestión de usuarios registrados</li>
-            <li>Visualización de todos los carros</li>
-            <li>Agregar nuevos carros al sistema</li>
-            <li>Administrar permisos y roles</li>
+      <div class="mt-8 p-5 bg-gray-100 rounded-lg text-left">
+        <div v-if="isAdmin">
+          <h3 class="text-green-500 mb-4">Funciones de Administrador</h3>
+          <p class="mb-3">Como administrador, tienes acceso a todas las funcionalidades del sistema:</p>
+          <ul class="text-left ml-5">
+            <li class="mb-2 text-gray-700">Gestión de usuarios registrados</li>
+            <li class="mb-2 text-gray-700">Visualización de todos los carros</li>
+            <li class="mb-2 text-gray-700">Agregar nuevos carros al sistema</li>
+            <li class="mb-2 text-gray-700">Administrar permisos y roles</li>
           </ul>
         </div>
         
-        <div v-if="isUser && !isAdmin" class="user-info">
-          <h3>Funciones de Usuario</h3>
-          <p>Como usuario, puedes:</p>
-          <ul>
-            <li>Ver tus carros registrados</li>
-            <li>Consultar la ubicación de tus vehículos</li>
-            <li>Actualizar tu información personal</li>
+        <div v-if="isUser && !isAdmin">
+          <h3 class="text-blue-500 mb-4">Funciones de Usuario</h3>
+          <p class="mb-3">Como usuario, puedes:</p>
+          <ul class="text-left ml-5">
+            <li class="mb-2 text-gray-700">Ver tus carros registrados</li>
+            <li class="mb-2 text-gray-700">Consultar la ubicación de tus vehículos</li>
+            <li class="mb-2 text-gray-700">Actualizar tu información personal</li>
           </ul>
         </div>
       </div>
@@ -138,148 +136,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.principal {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 24px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  text-align: center;
-}
-
-.navbar {
-  width: 100%;
-  background: #42b983;
-  border-radius: 6px 6px 0 0;
-  margin-bottom: 24px;
-  padding: 0;
-}
-
-.navbar ul {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-}
-
-.navbar li {
-  margin: 8px 16px;
-}
-
-.nav-link {
-  color: #fff;
-  text-decoration: none;
-  font-weight: bold;
-  padding: 12px 8px;
-  display: block;
-  transition: background 0.2s;
-  border-radius: 4px;
-}
-
-.nav-link.router-link-exact-active,
-.nav-link.router-link-active {
-  background: #369870;
-}
-
-header h1 {
-  margin-bottom: 16px;
-  color: #333;
-}
-
-.user-info {
-  background-color: #e8f5e9;
-  padding: 10px;
-  border-radius: 4px;
-  display: inline-block;
-  margin: 0 10px 10px 10px;
-}
-
-.error-message {
-  color: #dc3545;
-  background-color: #f8d7da;
-  padding: 15px;
-  border-radius: 5px;
-  margin: 20px 0;
-}
-
-p {
-  color: #555;
-  font-size: 16px;
-  margin-bottom: 10px;
-}
-
-.role-info {
-  margin-top: 30px;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  text-align: left;
-}
-
-.role-info h3 {
-  color: #42b983;
-  margin-bottom: 15px;
-}
-
-.role-info ul {
-  text-align: left;
-  margin-left: 20px;
-}
-
-.role-info li {
-  margin-bottom: 8px;
-  color: #555;
-}
-
-.admin-info {
-  border-left: 4px solid #dc3545;
-  padding-left: 15px;
-}
-
-.user-info-section {
-  border-left: 4px solid #007bff;
-  padding-left: 15px;
-}
-
-.login-redirect-btn {
-  display: inline-block;
-  margin-top: 15px;
-  padding: 10px 20px;
-  background-color: #42b983;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-  font-weight: bold;
-}
-
-.login-redirect-btn:hover {
-  background-color: #369870;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar ul {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .navbar li {
-    margin: 5px 0;
-  }
-  
-  .user-info {
-    display: block;
-    margin: 0 auto 10px auto;
-    width: 90%;
-  }
-  
-  .role-info {
-    padding: 15px;
-  }
-}
-</style>

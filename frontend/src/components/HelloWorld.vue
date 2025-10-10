@@ -1,3 +1,43 @@
+<template>
+  <div class="max-w-sm mx-auto mt-10 p-6 border rounded-lg bg-gray-50 text-black">
+    <h1 class="text-2xl font-bold mb-4">Iniciar Sesión</h1>
+    <div>
+      <div class="mb-4">
+        <label for="email" class="block mb-1 text-black">Correo Electrónico:</label>
+        <input 
+          id="email" 
+          v-model="email" 
+          type="email" 
+          autocomplete="email"
+          placeholder="tu@email.com"
+          :disabled="loading"
+          class="w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="password" class="block mb-1 text-black">Contraseña:</label>
+        <input 
+          id="password" 
+          v-model="password" 
+          type="password" 
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+          :disabled="loading"
+          class="w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed"
+        />
+      </div>
+      <button @click="login" :disabled="loading" class="w-full p-2 bg-green-500 text-white rounded cursor-pointer mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed">
+        <span v-if="loading">Iniciando sesión...</span>
+        <span v-else>Entrar</span>
+      </button>
+      <p v-if="error" class="text-red-600 mt-2 mb-2 text-center">{{ error }}</p>
+      <button @click="registrar" :disabled="loading" class="w-full p-2 bg-green-500 text-white rounded cursor-pointer">
+        Registrarte
+      </button>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -60,121 +100,3 @@ function registrar() {
   router.push({ name: 'Registrar' })
 }
 </script>
-
-<template>
-  <div class="login-container">
-    <h1>Iniciar Sesión</h1>
-    <div>
-      <div class="input-group">
-        <label for="email">Correo Electrónico:</label>
-        <input 
-          id="email" 
-          v-model="email" 
-          type="email" 
-          autocomplete="email"
-          placeholder="tu@email.com"
-          :disabled="loading"
-        />
-      </div>
-      <div class="input-group">
-        <label for="password">Contraseña:</label>
-        <input 
-          id="password" 
-          v-model="password" 
-          type="password" 
-          autocomplete="current-password"
-          placeholder="Tu contraseña"
-          :disabled="loading"
-        />
-      </div>
-      <button @click="login" :disabled="loading">
-        <span v-if="loading">Iniciando sesión...</span>
-        <span v-else>Entrar</span>
-      </button>
-      <p v-if="error" class="error">{{ error }}</p>
-      <button @click="registrar" :disabled="loading">
-        Registrarte
-      </button>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-/* Tus estilos se mantienen igual */
-.login-container {
-  max-width: 300px;
-  width: 90vw;
-  margin: 40px auto;
-  padding: 24px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  color: #000;
-  box-sizing: border-box;
-}
-
-.input-group {
-  margin-bottom: 16px;
-}
-
-label {
-  display: block;
-  margin-bottom: 4px;
-  color: #000;
-}
-
-input {
-  width: 100%;
-  padding: 6px;
-  box-sizing: border-box;
-  color: #000;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-input:disabled {
-  background-color: #f5f5f5;
-  cursor: not-allowed;
-}
-
-button {
-  width: 100%;
-  padding: 8px;
-  background: #42b983;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 8px;
-}
-
-button:hover:not(:disabled) {
-  background: #369870;
-}
-
-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.error {
-  color: #d32f2f;
-  margin-top: 8px;
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-@media (max-width: 400px) {
-  .login-container {
-    padding: 12px;
-    max-width: 98vw;
-  }
-  h1 {
-    font-size: 1.2rem;
-  }
-  button {
-    padding: 6px;
-    font-size: 1rem;
-  }
-}
-</style>
