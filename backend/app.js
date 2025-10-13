@@ -1,17 +1,16 @@
 const express = require('express');
+const app = express();
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const fs = require('fs');
 
-const app = express();
-
 // ✅ Importar correctamente
 const db = require('./models');
 const sequelize = db.sequelize;
 
-console.log("Verificando conexión...");
+console.log("Verificando conexión a la base de datos...");
 
 // Middlewares
 app.use(cors({
@@ -89,7 +88,7 @@ app.use((req, res, next) => {
 function emitCarEvent(event, carData) {
   // Para admins (todos los carros)
   io.to('admin-room').emit(event, carData);
-  
+
   // Para el usuario específico dueño del carro
   if (carData.userId) {
     io.to(`user-${carData.userId}`).emit(event, carData);
@@ -110,7 +109,7 @@ app.use('/api/carros', require('./routes/carros'));
 
 // Ruta de prueba
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'API funcionando correctamente',
     socketio: true,
     timestamp: new Date().toISOString()
@@ -138,7 +137,7 @@ try {
 // Manejo de errores
 app.use((error, req, res, next) => {
   console.error('Error no manejado:', error);
-  res.status(500).json({ 
+  res.status(500).json({
     success: false,
     message: 'Error interno del servidor',
     error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -157,12 +156,12 @@ if (!sequelize) {
 sequelize.authenticate()
   .then(() => {
     console.log('✅ Conexión a la base de datos exitosa');
-    
+
     return sequelize.sync({ force: false });
   })
   .then(() => {
     console.log('✅ Base de datos sincronizada');
-    
+
     // Usar server.listen en lugar de app.listen
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Servidor ejecutándose en puerto ${PORT}`);

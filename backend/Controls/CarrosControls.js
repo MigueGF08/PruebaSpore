@@ -60,7 +60,11 @@ exports.listActive = async (req, res) => {
     const { rows, count } = await Car.findAndCountAll({
       where,
       attributes: { exclude: ['imageData'] },
-      include: ['user'],
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }],
       limit,
       offset,
       order: [['createdAt', 'DESC']]
@@ -102,7 +106,11 @@ exports.listDeleted = async (req, res) => {
       paranoid: false,
       where,
       attributes: { exclude: ['imageData'] },
-      include: ['user'],
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }],
       limit,
       offset,
       order: [['deletedAt', 'DESC']]
@@ -131,7 +139,11 @@ exports.getById = async (req, res) => {
     }
     const car = await Car.findByPk(id, {
       attributes: { exclude: ['imageData'] },
-      include: ['user']
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
     });
     res.json({ success: true, data: car });
   } catch (error) {
@@ -232,7 +244,13 @@ exports.getImage = async (req, res) => {
        return res.status(400).json({ success: false, error: 'ID de carro inválido' });
      }
 
-     const car = await Car.findByPk(id, { include: ['user'] });
+     const car = await Car.findByPk(id, { 
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
+    });
      if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
      if (car.deletedAt) return res.status(400).json({ success: false, error: 'No se puede editar un carro eliminado' });
 
@@ -501,105 +519,78 @@ exports.getImage = async (req, res) => {
        return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
      }
      const cars = await Car.findAll({
-       where: { userId: parseInt(userId), deletedAt: null },
-       attributes: { exclude: ['imageData'] },
-       include: ['user']
-     });
-     res.json({ success: true, data: cars, count: cars.length });
-   } catch (error) {
-     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener carros del usuario' });
-   }
- };
-
- // Obtener carro con imagen
- exports.getWithImage = async (req, res) => {
-   try {
-     const { id } = req.params;
-     if (!id || isNaN(parseInt(id))) {
-       return res.status(400).json({ success: false, error: 'ID de carro inválido' });
-     }
-     const car = await Car.findByPk(id, { include: ['user'] });
-     if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
-     res.json({ success: true, data: car });
-   } catch (error) {
-     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el carro' });
-   }
- };
-
- // Obtener por placa
- exports.getByLicensePlate = async (req, res) => {
-   try {
-     const { licensePlate } = req.params;
-     if (!licensePlate || licensePlate.trim().length === 0) {
-       return res.status(400).json({ success: false, error: 'Placa inválida' });
-     }
-     const car = await Car.findOne({
-       where: { licensePlate: licensePlate.trim().toUpperCase(), deletedAt: null },
-       attributes: { exclude: ['imageData'] },
-       include: ['user']
-     });
-     if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
-     res.json({ success: true, data: car });
-   } catch (error) {
-     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el carro' });
-   }
- };
-
- // Estadísticas de conteo
- exports.statsCount = async (req, res) => {
-   try {
-     const totalCars = await Car.count({ where: { deletedAt: null } });
-     const totalWithImages = await Car.count({ where: { deletedAt: null, imageName: { [Op.ne]: null } } });
-     const totalWithLocation = await Car.count({ where: { deletedAt: null, location: { [Op.ne]: null } } });
-     const deletedCars = await Car.count({ where: { deletedAt: { [Op.ne]: null } }, paranoid: false });
-     res.json({ success: true, data: { total: totalCars, with_images: totalWithImages, with_location: totalWithLocation, deleted: deletedCars } });
-   } catch (error) {
-     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener estadísticas' });
-   }
- };
-
-exports.createCar = async (req, res) => {
-  try {
-    const { brand, model, licensePlate, userId, location } = req.body;
-    let imagePath = null;
-    if (req.file) {
-      imagePath = `/uploads/cars/${req.file.filename}`;
-    }
-    const car = await Car.create({
-      brand,
-      model,
-      licensePlate,
-      userId,
-      location,
-      image: imagePath
+      where: { userId: parseInt(userId), deletedAt: null },
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email', 'role']
+      }],
+      order: [['createdAt', 'DESC']]
     });
-    res.status(201).json({ success: true, data: car });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    res.json({ success: true, data: cars, count: cars.length });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error interno del servidor al obtener carros del usuario' });
   }
 };
 
-exports.updateCar = async (req, res) => {
+// Estadísticas de conteo
+exports.statsCount = async (req, res) => {
+  try {
+    const totalCars = await Car.count({ where: { deletedAt: null } });
+    const totalWithImages = await Car.count({ where: { deletedAt: null, imageName: { [Op.ne]: null } } });
+    const totalWithLocation = await Car.count({ where: { deletedAt: null, location: { [Op.ne]: null } } });
+    const deletedCars = await Car.count({ where: { deletedAt: { [Op.ne]: null } }, paranoid: false });
+    res.json({ success: true, data: { total: totalCars, with_images: totalWithImages, with_location: totalWithLocation, deleted: deletedCars } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error interno del servidor al obtener estadísticas' });
+  }
+};
+
+// Obtener carro con imagen completa (incluyendo imageData)
+exports.getWithImage = async (req, res) => {
   try {
     const { id } = req.params;
-    const car = await Car.findByPk(id);
-    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
-
-    const { brand, model, licensePlate, userId, location } = req.body;
-    let imagePath = car.image;
-    if (req.file) {
-      imagePath = `/uploads/cars/${req.file.filename}`;
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
     }
-    await car.update({
-      brand,
-      model,
-      licensePlate,
-      userId,
-      location,
-      image: imagePath
+    const car = await Car.findByPk(id, {
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
     });
+    if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
     res.json({ success: true, data: car });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el carro' });
   }
 };
+
+// Obtener carro por placa
+exports.getByLicensePlate = async (req, res) => {
+  try {
+    const { licensePlate } = req.params;
+    if (!licensePlate || typeof licensePlate !== 'string') {
+      return res.status(400).json({ success: false, error: 'Placa inválida' });
+    }
+    const car = await Car.findOne({
+      where: { licensePlate, deletedAt: null },
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
+    });
+    if (!car) {
+      return res.status(404).json({ success: false, error: 'Carro no encontrado' });
+    }
+    res.json({ success: true, data: car });
+  } catch (error) {
+    res.status(500).json({ success: false, error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = exports;

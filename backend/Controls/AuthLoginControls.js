@@ -1,6 +1,5 @@
-const { User, Car } = require('../models');
-const { Op } = require('sequelize');
-const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('../config/config');
 const {
   parsePageLimit,
   sanitizeQueryString,
@@ -10,6 +9,8 @@ const {
   validateRole,
   parsePositiveInt
 } = require('../utils/validators');
+const db = require('../models');
+const { User, Car } = db;
 
 // Función para validación detallada de contraseña
 const validatePasswordStrength = (password) => {
@@ -24,130 +25,55 @@ const validatePasswordStrength = (password) => {
 // Obtener todos los usuarios activos (paginado)
 exports.getAllUsers = async (req, res) => {
   try {
-    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
-    const q = sanitizeQueryString(req.query.q || '');
-    const roleParam = (req.query.role || '').trim(); // e.g., 'user', 'admin', or 'user,admin'
-    const phoneParam = (req.query.phone || '').trim();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-    const where = { deletedAt: null };
-    if (q) {
-      where[Op.or] = [
-        { firstName: { [Op.iLike || Op.like]: `%${q}%` } },
-        { lastName: { [Op.iLike || Op.like]: `%${q}%` } },
-        { email: { [Op.iLike || Op.like]: `%${q}%` } },
-        { phone: { [Op.iLike || Op.like]: `%${q}%` } },
-      ];
-    }
-    // Validación y filtros adicionales
-    if (phoneParam) {
-      if (!validatePhone(phoneParam)) {
-        return res.status(400).json({ success: false, error: 'Invalid phone filter' });
-      }
-      where.phone = { [Op.iLike || Op.like]: `%${phoneParam}%` };
-    }
-    if (roleParam) {
-      const roles = getValidRolesFromParam(roleParam);
-      if (roles === null) {
-        return res.status(400).json({ success: false, error: 'Invalid role filter' });
-      }
-      if (roles.length === 1) {
-        where.role = roles[0];
-      } else if (roles.length > 1) {
-        where.role = { [Op.in]: roles };
-      }
-    }
-
-    const { rows, count } = await User.findAndCountAll({
-      where,
-      attributes: { exclude: ['password'] },
-      include: [{
-        model: Car,
-        as: 'cars',
-        where: { deletedAt: null },
-        required: false
-      }],
-      distinct: true,
+    const { count, rows } = await User.findAndCountAll({
+      where: { deletedAt: null },
       limit,
       offset,
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      attributes: { exclude: ['password'] }
     });
 
     res.json({
       success: true,
       data: rows,
-      count: rows.length,
-      page,
-      limit,
       total: count,
+      page,
       totalPages: Math.ceil(count / limit)
     });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Internal server error' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al obtener usuarios activos', details: err.message });
   }
 };
 
 // Obtener usuarios eliminados (paginado)
 exports.getDeletedUsers = async (req, res) => {
   try {
-    const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
-    const q = sanitizeQueryString(req.query.q || '');
-    const roleParam = (req.query.role || '').trim();
-    const phoneParam = (req.query.phone || '').trim();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-    const where = { deletedAt: { [Op.ne]: null } };
-    if (q) {
-      where[Op.or] = [
-        { firstName: { [Op.iLike || Op.like]: `%${q}%` } },
-        { lastName: { [Op.iLike || Op.like]: `%${q}%` } },
-        { email: { [Op.iLike || Op.like]: `%${q}%` } },
-        { phone: { [Op.iLike || Op.like]: `%${q}%` } },
-      ];
-    }
-    if (phoneParam) {
-      if (!validatePhone(phoneParam)) {
-        return res.status(400).json({ success: false, error: 'Invalid phone filter' });
-      }
-      where.phone = { [Op.iLike || Op.like]: `%${phoneParam}%` };
-    }
-    if (roleParam) {
-      const roles = getValidRolesFromParam(roleParam);
-      if (roles === null) {
-        return res.status(400).json({ success: false, error: 'Invalid role filter' });
-      }
-      if (roles.length === 1) {
-        where.role = roles[0];
-      } else if (roles.length > 1) {
-        where.role = { [Op.in]: roles };
-      }
-    }
-
-    const { rows, count } = await User.findAndCountAll({
+    const { count, rows } = await User.findAndCountAll({
+      where: { deletedAt: { [require('sequelize').Op.ne]: null } },
       paranoid: false,
-      where,
-      attributes: { exclude: ['password'] },
-      include: [{
-        model: Car,
-        as: 'cars',
-        paranoid: false,
-        required: false
-      }],
-      distinct: true,
       limit,
       offset,
-      order: [['deletedAt', 'DESC']]
+      order: [['deletedAt', 'DESC']],
+      attributes: { exclude: ['password'] }
     });
-    
+
     res.json({
       success: true,
       data: rows,
-      count: rows.length,
-      page,
-      limit,
       total: count,
+      page,
       totalPages: Math.ceil(count / limit)
     });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Internal server error' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al obtener usuarios eliminados', details: err.message });
   }
 };
 
@@ -241,65 +167,44 @@ exports.registerUser = async (req, res) => {
         createdAt: user.createdAt
       }
     });
+    console.log('Body recibido:', req.body);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
+    console.error('Error en login:', error);
   }
 };
 
 // Login de usuario
 exports.loginUser = async (req, res) => {
   try {
+    console.log('Body recibido:', req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Email and password are required'
-      });
+      console.log('Faltan email o password');
+      return res.status(400).json({ success: false, error: 'Email y password requeridos' });
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await require('../models').User.findOne({ where: { email } });
+    console.log('Usuario encontrado:', user);
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      console.log('Usuario no encontrado');
+      return res.status(401).json({ success: false, error: 'Usuario no encontrado' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+    const bcrypt = require('bcryptjs');
+    const valid = await bcrypt.compare(password, user.password);
+    console.log('Password válido:', valid);
+
+    if (!valid) {
+      console.log('Contraseña incorrecta');
+      return res.status(401).json({ success: false, error: 'Contraseña incorrecta' });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Account is deactivated'
-      });
-    }
-
-    user.lastLogin = new Date();
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        lastLogin: user.lastLogin
-      }
-    });
+    res.json({ success: true, data: { id: user.id, email: user.email, role: user.role } });
   } catch (error) {
+    console.error('Error en login:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };

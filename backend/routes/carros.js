@@ -203,8 +203,7 @@ router.get('/:id/with-image', CarrosControls.getWithImage);
 // GET /api/carros/license-plate/:licensePlate - Get car by license plate
 router.get('/license-plate/:licensePlate', CarrosControls.getByLicensePlate);
 
-// GET /api/carros/stats/count - Get car count statistics
-router.get('/stats/count', CarrosControls.statsCount);
+// GET /api/carros/stats/count - Get car count statistics (removed - not implemented)
 
 // CORS handling
 router.options('*', (req, res) => {

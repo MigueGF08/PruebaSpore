@@ -1,17 +1,20 @@
 require('dotenv').config();
 
 const common = {
-  dialect: process.env.DB_DIALECT,
+  dialect: process.env.DB_DIALECT || 'sqlite',
   host: process.env.DB_HOST,
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
   logging: false,
+  
 };
 
 module.exports = {
   development: {
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
+    username: 'postgres',
+    password: '12345',
+    database: 'database_development',
+    host: '127.0.0.1',
+    dialect: 'postgres',
     ...common,
   },
   // Configuración adicional para la aplicación

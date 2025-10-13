@@ -1,4 +1,5 @@
-const { User } = require('../models');
+const db = require('../models');
+const { User, Car } = db;
 const bcrypt = require('bcryptjs');
 const {
   validateEmail,
