@@ -33,7 +33,7 @@ exports.getAllUsers = async (req, res) => {
       where: { deletedAt: null },
       limit,
       offset,
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']], // <-- aquí el cambio
       attributes: { exclude: ['password'] }
     });
 

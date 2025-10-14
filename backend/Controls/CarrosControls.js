@@ -67,7 +67,7 @@ exports.listActive = async (req, res) => {
       }],
       limit,
       offset,
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     res.json({
@@ -113,7 +113,7 @@ exports.listDeleted = async (req, res) => {
       }],
       limit,
       offset,
-      order: [['deletedAt', 'DESC']]
+      order: [['deleted_at', 'DESC']]
     });
 
     res.json({
@@ -526,7 +526,7 @@ exports.getImage = async (req, res) => {
         as: 'user',
         attributes: ['id', 'firstName', 'lastName', 'email', 'role']
       }],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
     res.json({ success: true, data: cars, count: cars.length });
   } catch (error) {
