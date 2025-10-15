@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
   Car.init({
     brand: DataTypes.STRING,
     model: DataTypes.STRING,
+    color: DataTypes.STRING, // Agregar color si lo usas
     licensePlate: {
       type: DataTypes.STRING,
       field: 'license_plate',
@@ -24,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.GEOMETRY,
       field: 'location'
     },
-    image: DataTypes.STRING,
+    // REMOVIDO: image: DataTypes.STRING, - Esta columna no existe en la BD
     imageData: {
       type: DataTypes.BLOB,
       field: 'image_data'
