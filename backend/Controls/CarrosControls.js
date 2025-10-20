@@ -15,6 +15,7 @@ function ensureUploadsDir() {
   try {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
   } catch (_) {}
+
 }
 
 function getExtFromMime(mime) {
@@ -198,6 +199,7 @@ exports.create = async (req, res) => {
     if (latitude !== undefined && longitude !== undefined) {
       carData.location = { type: 'Point', coordinates: [longitude, latitude] };
     }
+    // Poner Validacion para lat y long 
 
     const car = await Car.create(carData);
 
