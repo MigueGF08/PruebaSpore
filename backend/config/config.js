@@ -12,10 +12,14 @@ module.exports = {
   development: {
     username: process.env.DB_USERNAME ,
     password: process.env.DB_PASSWORD ,
-    database: process.env.DB_NAME ,
+    database: process.env.DB_NAME , // Use the DB_NAME from .env file
     host: process.env.DB_HOST  ,
     dialect: process.env.DB_DIALECT,
     ...common,
+      dialectOptions: {
+    // Esto puede ayudar con tipos PostGIS
+    useGeography: true
+  }
   },
   // Configuración adicional para la aplicación
   apiUrl: process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`,

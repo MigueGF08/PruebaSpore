@@ -29,22 +29,74 @@ exports.getAllUsers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
+    console.log('Querying users for debugging...');
+
+    // First, let's check if we can get the table description
+    try {
+      const tableDescription = await User.describe();
+      console.log('Table structure:', tableDescription);
+    } catch (err) {
+      console.log('Error getting table description:', err.message);
+    }
+
+    // Try different queries to understand the data
+    const queries = [
+      { name: 'All users', query: {} },
+      { name: 'Active users only', query: { is_active: true } },
+      { name: 'Non-deleted users', query: { deleted_at: null } },
+      { name: 'Active and non-deleted', query: { is_active: true, deleted_at: null } }
+    ];
+
+    const results = {};
+    for (const { name, query } of queries) {
+      try {
+        const count = await User.count({ where: query });
+        results[name] = count;
+        console.log(`${name}: ${count} users`);
+      } catch (err) {
+        console.log(`Error with ${name}:`, err.message);
+        results[name] = `Error: ${err.message}`;
+      }
+    }
+
+    // Try raw SQL queries to see the actual data
+    try {
+      const [rawResults] = await User.sequelize.query('SELECT * FROM "Users" LIMIT 5');
+      console.log('Raw SQL results:', rawResults);
+      results.rawData = rawResults.length > 0 ? `${rawResults.length} records found` : 'No records found';
+    } catch (err) {
+      console.log('Raw SQL error:', err.message);
+      results.rawData = `Error: ${err.message}`;
+    }
+
     const { count, rows } = await User.findAndCountAll({
-      where: { deletedAt: null },
+      where: {
+        deleted_at: null,
+        is_active: true
+      },
       limit,
       offset,
-      order: [['created_at', 'DESC']], // <-- aquí el cambio
+      order: [['created_at', 'DESC']],
       attributes: { exclude: ['password'] }
     });
+
+    console.log(`Filtered users (active and not deleted): ${count}`);
 
     res.json({
       success: true,
       data: rows,
       total: count,
       page,
-      totalPages: Math.ceil(count / limit)
+      totalPages: Math.ceil(count / limit),
+      debug: {
+        queryResults: results,
+        rawQueryResult: 'logged above',
+        rawDataResults: 'logged above',
+        tableStructure: 'logged above'
+      }
     });
   } catch (err) {
+    console.error('Error in getAllUsers:', err);
     res.status(500).json({ success: false, error: 'Error al obtener usuarios activos', details: err.message });
   }
 };
@@ -57,7 +109,7 @@ exports.getDeletedUsers = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const { count, rows } = await User.findAndCountAll({
-      where: { deletedAt: { [require('sequelize').Op.ne]: null } },
+      where: { deleted_at: { [require('sequelize').Op.ne]: null } },
       paranoid: false,
       limit,
       offset,
@@ -90,7 +142,7 @@ exports.getUserById = async (req, res) => {
       include: [{
         model: Car,
         as: 'cars',
-        where: { deletedAt: null },
+        where: { deleted_at: null },
         required: false
       }]
     });
@@ -399,7 +451,7 @@ exports.getUserCars = async (req, res) => {
     const cars = await Car.findAll({
       where: { 
         userId: id,
-        deletedAt: null 
+        deleted_at: null 
       },
       order: [['createdAt', 'DESC']]
     });

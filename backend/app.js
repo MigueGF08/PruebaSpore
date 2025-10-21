@@ -152,10 +152,60 @@ if (!sequelize) {
   process.exit(1);
 }
 
+// DEBUG: Mostrar información de conexión antes de conectar
+console.log('🔍 Información de conexión a BD:');
+console.log('Host:', process.env.DB_HOST || 'localhost');
+console.log('Port:', process.env.DB_PORT || 5432);
+console.log('Database:', process.env.DB_NAME || 'NOT_SET');
+console.log('Username:', process.env.DB_USERNAME || 'NOT_SET');
+console.log('Dialect:', process.env.DB_DIALECT || 'NOT_SET');
+
 // Sincronizar base de datos
 sequelize.authenticate()
-  .then(() => {
+  .then(async () => {
     console.log('✅ Conexión a la base de datos exitosa');
+
+    // DEBUG: Verificar qué tablas existen en la base de datos actual
+    try {
+      const [tables] = await sequelize.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+      `);
+      console.log('📋 Tablas encontradas en la BD actual:', tables.map(t => t.table_name));
+    } catch (err) {
+      console.log('❌ Error al consultar tablas:', err.message);
+    }
+
+    // DEBUG: Listar todas las bases de datos disponibles
+    try {
+      const [databases] = await sequelize.query(`
+        SELECT datname as database_name
+        FROM pg_database
+        WHERE datistemplate = false
+        ORDER BY datname
+      `);
+      console.log('🗄️ Bases de datos disponibles:', databases.map(db => db.database_name));
+    } catch (err) {
+      console.log('❌ Error al consultar bases de datos:', err.message);
+    }
+
+    // DEBUG: Verificar datos en tabla Users
+    try {
+      const [userCount] = await sequelize.query('SELECT COUNT(*) as count FROM "Users"');
+      console.log(`👥 Usuarios en tabla Users: ${userCount[0].count}`);
+    } catch (err) {
+      console.log('❌ Error al consultar usuarios:', err.message);
+    }
+
+    // DEBUG: Verificar datos en tabla Cars
+    try {
+      const [carCount] = await sequelize.query('SELECT COUNT(*) as count FROM "Cars"');
+      console.log(`🚗 Carros en tabla Cars: ${carCount[0].count}`);
+    } catch (err) {
+      console.log('❌ Error al consultar carros:', err.message);
+    }
 
     return sequelize.sync({ force: false });
   })

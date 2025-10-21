@@ -22,8 +22,10 @@ module.exports = (sequelize, DataTypes) => {
       unique: true
     },
     location: {
-      type: DataTypes.GEOMETRY,
-      field: 'location'
+      type: DataTypes.JSON,
+      field: 'location',
+      allowNull: true,
+      comment: 'Coordinates as {lat: number, lng: number}'
     },
     // REMOVIDO: image: DataTypes.STRING, - Esta columna no existe en la BD
     imageData: {

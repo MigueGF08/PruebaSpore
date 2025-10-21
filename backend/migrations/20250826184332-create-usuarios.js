@@ -59,7 +59,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.fn('NOW'),
-        field: 'created_  at'
+        field: 'created_at'
       },
       updatedAt: {
         allowNull: false,
