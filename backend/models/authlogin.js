@@ -8,40 +8,40 @@ module.exports = (sequelize, DataTypes) => {
     static async login(email, password) {
       try {
         // Buscar usuario por email
-        const user = await this.findOne({ 
-          where: { email } 
+        const user = await this.findOne({
+          where: { email }
         });
 
         if (!user) {
-          return { 
-            success: false, 
-            error: 'Usuario no encontrado' 
+          return {
+            success: false,
+            error: 'Usuario no encontrado'
           };
         }
 
         // Verificar contraseña
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
-          return { 
-            success: false, 
-            error: 'Contraseña incorrecta' 
+          return {
+            success: false,
+            error: 'Contraseña incorrecta'
           };
         }
 
         // Verificar si la cuenta está activa
         if (user.isActive === false) {
-          return { 
-            success: false, 
-            error: 'Cuenta desactivada' 
+          return {
+            success: false,
+            error: 'Cuenta desactivada'
           };
         }
 
         // Generar token JWT
         const token = jwt.sign(
-          { 
-            id: user.id, 
+          {
+            id: user.id,
             email: user.email,
-            role: user.role 
+            role: user.role
           },
           process.env.JWT_SECRET || 'tu-clave-secreta', // Usa una variable de entorno
           { expiresIn: '24h' }
@@ -62,16 +62,15 @@ module.exports = (sequelize, DataTypes) => {
         // Actualizar último login
         await user.update({ lastLogin: new Date() });
 
-        return { 
-          success: true, 
-          user: userResponse 
+        return {
+          success: true,
+          user: userResponse
         };
 
       } catch (error) {
-        console.error('Error en login:', error);
-        return { 
-          success: false, 
-          error: 'Error interno del servidor' 
+        return {
+          success: false,
+          error: 'Error interno del servidor'
         };
       }
     }

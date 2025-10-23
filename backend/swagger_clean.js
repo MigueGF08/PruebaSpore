@@ -12,17 +12,9 @@ const options = {
     },
     servers: [
       {
-        url: process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`,
-        description: 'Servidor Principal',
+        url: 'http://localhost:3000'  ,
+        description: 'Servidor de Desarrollo',
       },
-      {
-        url: `http://localhost:${process.env.PORT || 3000}`,
-        description: 'Servidor de Desarrollo Local',
-      },
-      ...(process.env.NODE_ENV === 'production' ? [{
-        url: process.env.PRODUCTION_URL || 'https://api.miproyecto.com',
-        description: 'Servidor de Producción',
-      }] : [])
     ],
     components: {
       schemas: {

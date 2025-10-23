@@ -135,44 +135,88 @@ if (!sequelize) {
 }
 
 // Sincronizar base de datos
-    sequelize.authenticate()
-      .then(async () => {
-        return sequelize.sync({ force: false });
-      })
-      .then(() => {
-        // Configurar middleware después de que la BD esté lista
-        app.use((req, res) => {
-          if (req.path.startsWith('/api')) {
-            return res.status(404).json({
-              success: false,
-              error: 'API endpoint no encontrado',
-              path: req.path,
-              method: req.method,
-              availableEndpoints: [
-                'GET /api/usuarios',
-                'GET /api/usuarios/debug/all',
-                'GET /api/usuarios/deleted',
-                'POST /api/usuarios/register',
-                'POST /api/usuarios/login',
-                'PUT /api/usuarios/:id',
-                'DELETE /api/usuarios/:id',
-                'GET /api/carros',
-                'GET /api/carros/debug/all'
-              ]
-            });
-          }
-          res.status(404).json({
-            success: false,
-            error: 'Página no encontrada',
-            path: req.path
-          });
-        });
+sequelize.authenticate()
+  .then(async () => {
+    // DEBUG: Verificar qué tablas existen en la base de datos actual
+    try {
+      const [tables] = await sequelize.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+      `);
+    } catch (err) {
+      // Error al consultar tablas
+    }
 
-        server.listen(PORT, '0.0.0.0');
-      })
-      .catch(error => {
-        process.exit(1);
+    // DEBUG: Listar todas las bases de datos disponibles
+    try {
+      const [databases] = await sequelize.query(`
+        SELECT datname as database_name
+        FROM pg_database
+        WHERE datistemplate = false
+        ORDER BY datname
+      `);
+    } catch (err) {
+      // Error al consultar bases de datos
+    }
+
+    // DEBUG: Verificar datos en tabla Users
+    try {
+      const [userCount] = await sequelize.query('SELECT COUNT(*) as count FROM "Users"');
+    } catch (err) {
+      // Error al consultar usuarios
+    }
+
+    // DEBUG: Verificar datos en tabla Cars
+    try {
+      const [carCount] = await sequelize.query('SELECT COUNT(*) as count FROM "Cars"');
+    } catch (err) {
+      // Error al consultar carros
+    }
+
+    return sequelize.sync({ force: false });
+  })
+  .then(() => {
+    // Configurar middleware después de que la BD esté lista
+    // Middleware para rutas no encontradas (404) - Solo para rutas que no son de API
+    app.use((req, res) => {
+      // Si la ruta comienza con /api, dejar que las rutas específicas la manejen
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({
+          success: false,
+          error: 'API endpoint no encontrado',
+          path: req.path,
+          method: req.method,
+          availableEndpoints: [
+            'GET /api/usuarios',
+            'GET /api/usuarios/debug/all',
+            'GET /api/usuarios/deleted',
+            'POST /api/usuarios/register',
+            'POST /api/usuarios/login',
+            'PUT /api/usuarios/:id',
+            'DELETE /api/usuarios/:id',
+            'GET /api/carros',
+            'GET /api/carros/debug/all'
+          ]
+        });
+      }
+
+      // Para rutas no-API, devolver 404 genérico
+      res.status(404).json({
+        success: false,
+        error: 'Página no encontrada',
+        path: req.path
       });
+    });
+
+    // Usar server.listen en lugar de app.listen
+    server.listen(PORT, '0.0.0.0', () => {
+    });
+  })
+  .catch(error => {
+    process.exit(1);
+  });
 
 // Manejo de errores - DEBE ir DESPUÉS de todas las rutas
 app.use((error, req, res, next) => {

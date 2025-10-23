@@ -51,7 +51,11 @@ const upload = multer({ storage });
  *       200:
  *         description: Lista de carros activa paginada
  */
+// GET /api/carros - Listar carros activos (paginado)
 router.get('/', CarrosControls.listActive);
+
+// GET /api/carros/debug/all - Listar TODOS los carros sin filtros (para debugging)
+router.get('/debug/all', CarrosControls.listAllDebug);
 
 /**
  * @swagger

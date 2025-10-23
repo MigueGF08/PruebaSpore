@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const config = require('../config/config');
 const {
   parsePageLimit,
@@ -22,6 +23,366 @@ const validatePasswordStrength = (password) => {
   return errors;
 };
 
+// Obtener TODOS los usuarios sin filtros (para debugging)
+exports.getAllUsersDebug = async (req, res) => {
+  try {
+    // Contar usuarios por diferentes criterios
+    const totalUsers = await User.count();
+    const activeUsers = await User.count({ where: { isActive: true } });
+    const inactiveUsers = await User.count({ where: { isActive: false } });
+    const deletedUsers = await User.count({ where: { deletedAt: { [require('sequelize').Op.ne]: null } }, paranoid: false });
+    const nonDeletedUsers = await User.count({ where: { deletedAt: null } });
+
+    // Obtener TODOS los usuarios con detalles completos
+    const allUsers = await User.findAll({
+      attributes: { exclude: ['password'] },
+      order: [['id', 'ASC']]
+    });
+
+    // Obtener algunos usuarios de ejemplo de cada categoría
+    const sampleActive = await User.findAll({
+      where: { isActive: true, deletedAt: null },
+      limit: 5,
+      attributes: { exclude: ['password'] }
+    });
+
+    const sampleInactive = await User.findAll({
+      where: { isActive: false },
+      limit: 5,
+      attributes: { exclude: ['password'] }
+    });
+
+    const sampleDeleted = await User.findAll({
+      where: { deletedAt: { [require('sequelize').Op.ne]: null } },
+      paranoid: false,
+      limit: 5,
+      attributes: { exclude: ['password'] }
+    });
+
+    const sampleOnlyActive = await User.findAll({
+      where: { isActive: true },
+      limit: 5,
+      attributes: { exclude: ['password'] }
+    });
+
+    res.json({
+      success: true,
+      message: 'Debug info - TODOS los usuarios',
+      data: allUsers,
+      debug: {
+        total: totalUsers,
+        active: activeUsers,
+        inactive: inactiveUsers,
+        deleted: deletedUsers,
+        nonDeleted: nonDeletedUsers,
+        sampleActive,
+        sampleInactive,
+        sampleDeleted,
+        sampleOnlyActive
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al obtener debug de usuarios', details: err.message });
+  }
+};
+
+// Activar TODOS los usuarios inactivos (para debugging)
+exports.activateAllUsersDebug = async (req, res) => {
+  try {
+    // Contar antes del cambio
+    const beforeInactive = await User.count({ where: { isActive: false } });
+    const beforeDeleted = await User.count({ where: { deletedAt: { [require('sequelize').Op.ne]: null } }, paranoid: false });
+
+    // Activar todos los usuarios que están inactivos pero no eliminados
+    const [affectedRows] = await User.update(
+      { isActive: true },
+      {
+        where: {
+          isActive: false,
+          deletedAt: null
+        }
+      }
+    );
+
+    // Verificar después del cambio
+    const afterInactive = await User.count({ where: { isActive: false } });
+    const afterActive = await User.count({ where: { isActive: true } });
+
+    // Obtener lista actualizada
+    const allUsers = await User.findAll({
+      attributes: { exclude: ['password'] },
+      order: [['id', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      message: `Activados ${affectedRows} usuarios inactivos`,
+      data: allUsers,
+      debug: {
+        before: {
+          inactive: beforeInactive,
+          deleted: beforeDeleted
+        },
+        after: {
+          inactive: afterInactive,
+          active: afterActive,
+          activated: affectedRows
+        }
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al activar usuarios', details: err.message });
+  }
+};
+
+// Inspeccionar TODA la base de datos (para debugging)
+exports.inspectDatabase = async (req, res) => {
+  try {
+    // Obtener todas las tablas
+    const [tables] = await User.sequelize.query(`
+      SELECT table_name, table_schema
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE'
+      ORDER BY table_name
+    `);
+
+    let databaseInfo = {
+      tables: {},
+      totalUsers: 0,
+      totalCars: 0,
+      userDetails: [],
+      carDetails: []
+    };
+
+    // Inspeccionar cada tabla
+    for (const table of tables) {
+      try {
+        const tableName = table.table_name;
+
+        // Contar registros
+        const [countResult] = await User.sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        const count = parseInt(countResult[0].count);
+
+        databaseInfo.tables[tableName] = {
+          count: count,
+          columns: []
+        };
+
+        // Obtener estructura de columnas
+        const [columns] = await User.sequelize.query(`
+          SELECT column_name, data_type, is_nullable, column_default
+          FROM information_schema.columns
+          WHERE table_name = '${tableName}'
+          AND table_schema = 'public'
+          ORDER BY ordinal_position
+        `);
+
+        databaseInfo.tables[tableName].columns = columns;
+
+        // Si es la tabla Users, obtener todos los registros
+        if (tableName.toLowerCase().includes('user')) {
+          const [users] = await User.sequelize.query(`SELECT * FROM "${tableName}" ORDER BY id`);
+          databaseInfo.userDetails = users;
+          databaseInfo.totalUsers = count;
+        }
+
+        // Si es la tabla Cars, obtener todos los registros
+        if (tableName.toLowerCase().includes('car')) {
+          const [cars] = await User.sequelize.query(`SELECT * FROM "${tableName}" ORDER BY id`);
+          databaseInfo.carDetails = cars;
+          databaseInfo.totalCars = count;
+        }
+
+        // Si hay pocos registros, mostrarlos todos
+        if (count > 0 && count <= 50) {
+          const [rows] = await User.sequelize.query(`SELECT * FROM "${tableName}" ORDER BY id`);
+          databaseInfo.tables[tableName].sampleData = rows;
+        }
+
+      } catch (err) {
+        // Error al inspeccionar tabla
+      }
+    }
+
+    // Verificar si hay tablas relacionadas con usuarios en otros esquemas
+    try {
+      const [allSchemas] = await User.sequelize.query(`
+        SELECT schemaname, tablename
+        FROM pg_tables
+        WHERE tablename LIKE '%user%' OR tablename LIKE '%User%'
+        ORDER BY schemaname, tablename
+      `);
+
+      if (allSchemas.length > 0) {
+        databaseInfo.userTablesInAllSchemas = allSchemas;
+      }
+    } catch (err) {
+      // Error al buscar tablas de usuarios en otros esquemas
+    }
+
+    // Buscar usuarios en diferentes variaciones de nombres de tabla
+    const possibleUserTableNames = ['users', 'Users', 'usuarios', 'user', 'User'];
+    for (const tableName of possibleUserTableNames) {
+      try {
+        const [userCount] = await User.sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        if (userCount[0].count > 0) {
+          const [users] = await User.sequelize.query(`SELECT * FROM "${tableName}" ORDER BY id`);
+
+          databaseInfo.foundUsersInOtherTable = {
+            tableName: tableName,
+            count: userCount[0].count,
+            users: users
+          };
+        }
+      } catch (err) {
+        // La tabla no existe, continuar
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Inspección completa de la base de datos',
+      data: databaseInfo,
+      debug: {
+        totalTables: tables.length,
+        tablesFound: tables.map(t => t.table_name),
+        summary: {
+          totalUsers: databaseInfo.totalUsers,
+          totalCars: databaseInfo.totalCars,
+          userDetails: databaseInfo.userDetails,
+          carDetails: databaseInfo.carDetails,
+          foundUsersInOtherTable: databaseInfo.foundUsersInOtherTable
+        }
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al inspeccionar base de datos', details: err.message });
+  }
+};
+
+// Crear usuarios de prueba (para debugging)
+exports.createTestUsers = async (req, res) => {
+  try {
+    const testUsers = [
+      { email: 'admin@test.com', password: 'Test123!', firstName: 'Admin', lastName: 'Test', role: 'admin' },
+      { email: 'user1@test.com', password: 'Test123!', firstName: 'Usuario', lastName: 'Uno', role: 'user' },
+      { email: 'user2@test.com', password: 'Test123!', firstName: 'Usuario', lastName: 'Dos', role: 'user' },
+      { email: 'user3@test.com', password: 'Test123!', firstName: 'Usuario', lastName: 'Tres', role: 'user' },
+      { email: 'user4@test.com', password: 'Test123!', firstName: 'Usuario', lastName: 'Cuatro', role: 'user' },
+      { email: 'user5@test.com', password: 'Test123!', firstName: 'Usuario', lastName: 'Cinco', role: 'user' }
+    ];
+
+    let createdUsers = [];
+    let errors = [];
+
+    for (const userData of testUsers) {
+      try {
+        // Verificar si el usuario ya existe
+        const existingUser = await User.findOne({ where: { email: userData.email } });
+        if (existingUser) {
+          await existingUser.update({ isActive: true, deletedAt: null });
+          createdUsers.push(existingUser);
+          continue;
+        }
+
+        // Crear nuevo usuario
+        const newUser = await User.create(userData);
+        createdUsers.push(newUser);
+      } catch (err) {
+        errors.push({ email: userData.email, error: err.message });
+      }
+    }
+
+    // Verificar resultado final
+    const totalUsersAfter = await User.count();
+    const activeUsersAfter = await User.count({ where: { isActive: true, deletedAt: null } });
+
+    res.json({
+      success: true,
+      message: `Creados/activados ${createdUsers.length} usuarios de prueba`,
+      data: createdUsers.map(u => ({
+        id: u.id,
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        isActive: u.isActive,
+        createdAt: u.createdAt
+      })),
+      debug: {
+        createdCount: createdUsers.length,
+        errorCount: errors.length,
+        errors: errors,
+        totals: {
+          before: totalUsersAfter - createdUsers.length,
+          after: totalUsersAfter,
+          activeAfter: activeUsersAfter
+        }
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al crear usuarios de prueba', details: err.message });
+  }
+};
+
+// Estado simple de usuarios (para debugging)
+exports.getUserStatus = async (req, res) => {
+  try {
+    // Contadores básicos
+    const totalUsers = await User.count();
+    const activeUsers = await User.count({ where: { isActive: true, deletedAt: null } });
+    const inactiveUsers = await User.count({ where: { isActive: false } });
+    const deletedUsers = await User.count({ where: { deletedAt: { [require('sequelize').Op.ne]: null } }, paranoid: false });
+
+    // Usuarios activos que se muestran en el frontend
+    const visibleUsers = await User.findAll({
+      where: { isActive: true, deletedAt: null },
+      attributes: { exclude: ['password'] },
+      limit: 10
+    });
+
+    // Verificar si hay usuarios en otras tablas
+    const possibleTables = ['users', 'Users', 'usuarios', 'user', 'User'];
+    let foundInOtherTables = [];
+
+    for (const tableName of possibleTables) {
+      try {
+        const [count] = await User.sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+        if (parseInt(count[0].count) > 0) {
+          foundInOtherTables.push({ table: tableName, count: count[0].count });
+        }
+      } catch (err) {
+        // Tabla no existe
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Estado de usuarios',
+      data: {
+        total: totalUsers,
+        visible: activeUsers,
+        inactive: inactiveUsers,
+        deleted: deletedUsers,
+        visibleUsers: visibleUsers,
+        foundInOtherTables: foundInOtherTables,
+        availableDebugEndpoints: [
+          '/api/usuarios/debug/all',
+          '/api/usuarios/debug/database',
+          '/api/usuarios/debug/activate-all',
+          '/api/usuarios/debug/create-test-users'
+        ]
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al obtener estado de usuarios', details: err.message });
+  }
+};
+
 // Obtener todos los usuarios activos (paginado)
 exports.getAllUsers = async (req, res) => {
   try {
@@ -29,46 +390,56 @@ exports.getAllUsers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    console.log('Querying users for debugging...');
+    // Verificar estado antes de la consulta
+    const totalUsers = await User.count();
+    const activeUsers = await User.count({ where: { isActive: true, deletedAt: null } });
+    const inactiveUsers = await User.count({ where: { isActive: false } });
+    const deletedUsers = await User.count({ where: { deletedAt: { [require('sequelize').Op.ne]: null } }, paranoid: false });
 
-    // First, let's check if we can get the table description
-    try {
-      const tableDescription = await User.describe();
-      console.log('Table structure:', tableDescription);
-    } catch (err) {
-      console.log('Error getting table description:', err.message);
-    }
+    // Verificar si hay usuarios en otras variaciones de tabla
+    let foundInOtherTables = false;
+    const possibleTables = ['users', 'Users', 'usuarios', 'user', 'User'];
 
-    // Try different queries to understand the data
-    const queries = [
-      { name: 'All users', query: {} },
-      { name: 'Active users only', query: { is_active: true } },
-      { name: 'Non-deleted users', query: { deleted_at: null } },
-      { name: 'Active and non-deleted', query: { is_active: true, deleted_at: null } }
-    ];
-
-    const results = {};
-    for (const { name, query } of queries) {
+    for (const tableName of possibleTables) {
       try {
-        const count = await User.count({ where: query });
-        results[name] = count;
-        console.log(`${name}: ${count} users`);
+        const [count] = await User.sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}" WHERE deleted_at IS NULL AND is_active = true`);
+        if (parseInt(count[0].count) > activeUsers) {
+          foundInOtherTables = true;
+
+          // Si encontramos más usuarios en otra tabla, intentar usar esa
+          try {
+            const [users] = await User.sequelize.query(`
+              SELECT * FROM "${tableName}"
+              WHERE deleted_at IS NULL AND is_active = true
+              ORDER BY created_at DESC
+              LIMIT ${limit} OFFSET ${offset}
+            `);
+
+            const [totalCount] = await User.sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}" WHERE deleted_at IS NULL AND is_active = true`);
+
+            return res.json({
+              success: true,
+              data: users,
+              total: parseInt(totalCount[0].count),
+              page,
+              totalPages: Math.ceil(parseInt(totalCount[0].count) / limit),
+              debug: {
+                usedTable: tableName,
+                totalInDB: totalUsers,
+                activeInDB: activeUsers,
+                message: `Usando tabla ${tableName} en lugar de Users`
+              }
+            });
+          } catch (err) {
+            // Error al consultar tabla
+          }
+        }
       } catch (err) {
-        console.log(`Error with ${name}:`, err.message);
-        results[name] = `Error: ${err.message}`;
+        // Tabla no existe o no se puede consultar
       }
     }
 
-    // Try raw SQL queries to see the actual data
-    try {
-      const [rawResults] = await User.sequelize.query('SELECT * FROM "Users" LIMIT 5');
-      console.log('Raw SQL results:', rawResults);
-      results.rawData = rawResults.length > 0 ? `${rawResults.length} records found` : 'No records found';
-    } catch (err) {
-      console.log('Raw SQL error:', err.message);
-      results.rawData = `Error: ${err.message}`;
-    }
-
+    // Si no encontramos más usuarios en otras tablas, usar la consulta normal
     const { count, rows } = await User.findAndCountAll({
       where: {
         deleted_at: null,
@@ -80,8 +451,6 @@ exports.getAllUsers = async (req, res) => {
       attributes: { exclude: ['password'] }
     });
 
-    console.log(`Filtered users (active and not deleted): ${count}`);
-
     res.json({
       success: true,
       data: rows,
@@ -89,14 +458,14 @@ exports.getAllUsers = async (req, res) => {
       page,
       totalPages: Math.ceil(count / limit),
       debug: {
-        queryResults: results,
-        rawQueryResult: 'logged above',
-        rawDataResults: 'logged above',
-        tableStructure: 'logged above'
+        totalInDB: totalUsers,
+        activeInDB: activeUsers,
+        inactiveInDB: inactiveUsers,
+        deletedInDB: deletedUsers,
+        foundInOtherTables: foundInOtherTables
       }
     });
   } catch (err) {
-    console.error('Error in getAllUsers:', err);
     res.status(500).json({ success: false, error: 'Error al obtener usuarios activos', details: err.message });
   }
 };
@@ -219,146 +588,36 @@ exports.registerUser = async (req, res) => {
         createdAt: user.createdAt
       }
     });
-    console.log('Body recibido:', req.body);
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
-    console.error('Error en login:', error);
   }
 };
 
 // Login de usuario
 exports.loginUser = async (req, res) => {
   try {
-    console.log('Body recibido:', req.body);
     const { email, password } = req.body;
 
     if (!email || !password) {
-      console.log('Faltan email o password');
       return res.status(400).json({ success: false, error: 'Email y password requeridos' });
     }
 
     const user = await require('../models').User.findOne({ where: { email } });
-    console.log('Usuario encontrado:', user);
 
     if (!user) {
-      console.log('Usuario no encontrado');
       return res.status(401).json({ success: false, error: 'Usuario no encontrado' });
     }
 
     const bcrypt = require('bcryptjs');
     const valid = await bcrypt.compare(password, user.password);
-    console.log('Password válido:', valid);
 
     if (!valid) {
-      console.log('Contraseña incorrecta');
       return res.status(401).json({ success: false, error: 'Contraseña incorrecta' });
     }
 
     res.json({ success: true, data: { id: user.id, email: user.email, role: user.role } });
   } catch (error) {
-    console.error('Error en login:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-};
-
-// Actualizar usuario
-exports.updateUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!parsePositiveInt(id)) {
-      return res.status(400).json({ success: false, error: 'Invalid user id' });
-    }
-    const { firstName, lastName, phone, role, isActive, userId } = req.body;
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    const updateData = {};
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (phone !== undefined) {
-      if (phone && !validatePhone(phone)) {
-        return res.status(400).json({ success: false, error: 'Invalid phone' });
-      }
-      updateData.phone = phone;
-    }
-    if (role !== undefined) {
-      if (role && !validateRole(role)) {
-        return res.status(400).json({ success: false, error: 'Invalid role' });
-      }
-      updateData.role = role;
-    }
-    if (isActive !== undefined) updateData.isActive = isActive;
-    if (userId !== undefined) updateData.userId = userId;
-
-    await user.update(updateData);
-
-    res.json({
-      success: true,
-      message: 'User updated successfully',
-      data: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone,
-        role: user.role,
-        isActive: user.isActive,
-        lastLogin: user.lastLogin,
-        userId: user.userId
-      }
-    });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
-};
-
-// Cambiar contraseña
-exports.changePassword = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Current password and new password are required'
-      });
-    }
-
-    const errors = validatePasswordStrength(newPassword);
-    if (errors.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `New password must contain: ${errors.join(', ')}`,
-        details: errors
-      });
-    }
-
-    const user = await User.findByPk(id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        error: 'Current password is incorrect'
-      });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Password updated successfully'
-    });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
   }
 };
 
@@ -433,44 +692,6 @@ exports.forceDeleteUser = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
-  }
-};
-
-// Obtener carros de un usuario
-exports.getUserCars = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findByPk(id, {
-      attributes: ['id', 'firstName', 'lastName', 'email']
-    });
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    const cars = await Car.findAll({
-      where: { 
-        userId: id,
-        deleted_at: null 
-      },
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          first_name: user.firstName,
-          last_name: user.lastName,
-          email: user.email
-        },
-        cars: cars,
-        count: cars.length
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
 

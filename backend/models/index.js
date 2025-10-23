@@ -18,10 +18,10 @@ if (config.use_env_variable) {
 // Test database connection
 sequelize.authenticate()
   .then(() => {
-    console.log('Database connection established successfully.');
+    // Database connection established successfully
   })
   .catch(err => {
-    console.error('Unable to connect to the database:', err);
+    // Unable to connect to the database
   });
 
 fs
@@ -31,7 +31,8 @@ fs
       file.indexOf('.') !== 0 &&
       file !== basename &&
       file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
+      file.indexOf('test.js') === -1 &&
+      file.indexOf('clean') === -1
     );
   })
   .forEach(file => {
@@ -49,5 +50,3 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
 module.exports = db;
-
-

@@ -11,6 +11,21 @@ const UsersCtrl = require('../controls/AuthLoginControls');
 // GET /api/usuarios - Listar usuarios activos
 router.get('/', UsersCtrl.getAllUsers);
 
+// GET /api/usuarios/debug/all - Listar TODOS los usuarios sin filtros (para debugging)
+router.get('/debug/all', UsersCtrl.getAllUsersDebug);
+
+// POST /api/usuarios/debug/activate-all - Activar todos los usuarios inactivos (para debugging)
+router.post('/debug/activate-all', UsersCtrl.activateAllUsersDebug);
+
+// GET /api/usuarios/debug/database - Ver todas las tablas y datos (para debugging)
+router.get('/debug/database', UsersCtrl.inspectDatabase);
+
+// GET /api/usuarios/debug/status - Estado simple de usuarios (para debugging)
+router.get('/debug/status', UsersCtrl.getUserStatus);
+
+// POST /api/usuarios/debug/create-test-users - Crear usuarios de prueba (para debugging)
+router.post('/debug/create-test-users', UsersCtrl.createTestUsers);
+
 // GET /api/usuarios/deleted - Listar usuarios eliminados (soft-deleted)
 router.get('/deleted', UsersCtrl.getDeletedUsers);
 
@@ -39,29 +54,6 @@ router.get('/deleted', UsersCtrl.getDeletedUsers);
  *       500:
  *         description: Error interno del servidor
  */
-// Función para validación detallada de contraseña
-const validatePasswordStrength = (password) => {
-  const errors = [];
-
-  
-  if (password.length < 8) {
-    errors.push('at least 8 characters');
-  }
-  if (!/[a-z]/.test(password)) {
-    errors.push('one lowercase letter');
-  }
-  if (!/[A-Z]/.test(password)) {
-    errors.push('one uppercase letter');
-  }
-  if (!/\d/.test(password)) {
-    errors.push('one number');
-  }
-  if (!/[@$!%*?&]/.test(password)) {
-    errors.push('one special character (@$!%*?&)');
-  }
-  
-  return errors;
-};
 
 /**
  * @swagger
@@ -131,12 +123,11 @@ router.post('/register', UsersCtrl.registerUser);
 // POST /api/users/login - User login
 router.post('/login', UsersCtrl.loginUser);
 
-// PUT /api/users/:id - Update user
-router.put('/:id', UsersCtrl.updateUser);
-  
+// PUT /api/users/:id - Update user (admin version)
+router.put('/:id', UsersCtrl.adminUpdateUser);
 
-// PUT /api/users/:id/password - Change password
-router.put('/:id/password', UsersCtrl.changePassword);
+// PUT /api/users/:id/password - Admin reset password
+router.put('/:id/password', UsersCtrl.adminResetPassword);
 
 // DELETE /api/users/:id - Soft delete user
 router.delete('/:id', UsersCtrl.deleteUser);
@@ -146,14 +137,6 @@ router.post('/:id/restore', UsersCtrl.restoreUser);
 
 // DELETE /api/users/:id/force - Permanent delete
 router.delete('/:id/force', UsersCtrl.forceDeleteUser);
-
-// GET /api/users/:id/cars - Get user's cars
-router.get('/:id/cars', UsersCtrl.getUserCars);
-// PUT /api/users/:id/admin-update - Update user (admin version, no password required)
-router.put('/:id/admin-update', UsersCtrl.adminUpdateUser);
-
-// PUT /api/users/:id/admin-password - Admin reset password (no current password required)
-router.put('/:id/admin-password', UsersCtrl.adminResetPassword);
 
 // CORS handling
 router.options('*', (req, res) => {

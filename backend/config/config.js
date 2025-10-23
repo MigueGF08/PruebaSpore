@@ -12,7 +12,7 @@ module.exports = {
   development: {
     username: process.env.DB_USERNAME ,
     password: process.env.DB_PASSWORD ,
-    database: process.env.DB_NAME , // Use the DB_NAME from .env file
+    database: process.env.DB_DATABASE || process.env.DB_NAME , // Support both DB_DATABASE and DB_NAME
     host: process.env.DB_HOST  ,
     dialect: process.env.DB_DIALECT,
     ...common,

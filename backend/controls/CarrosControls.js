@@ -40,6 +40,66 @@ async function tryRemoveImage(filename) {
   try { await fs.promises.unlink(fp); } catch (_) {}
 }
 
+// Listar TODOS los carros sin filtros (para debugging)
+exports.listAllDebug = async (req, res) => {
+  try {
+    // Contar carros por diferentes criterios
+    const totalCars = await Car.count();
+    const activeCars = await Car.count({ where: { deletedAt: null } });
+    const deletedCars = await Car.count({ where: { deletedAt: { [Op.ne]: null } }, paranoid: false });
+
+    // Obtener algunos carros de ejemplo de cada categoría
+    const sampleActive = await Car.findAll({
+      where: { deletedAt: null },
+      limit: 3,
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
+    });
+
+    const sampleDeleted = await Car.findAll({
+      where: { deletedAt: { [Op.ne]: null } },
+      paranoid: false,
+      limit: 3,
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }]
+    });
+
+    // Obtener todos los carros sin filtros (excepto imageData)
+    const allCars = await Car.findAll({
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: require('../models').User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email']
+      }],
+      order: [['id', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      message: 'Debug info - TODOS los carros',
+      data: allCars,
+      debug: {
+        total: totalCars,
+        active: activeCars,
+        deleted: deletedCars,
+        sampleActive,
+        sampleDeleted
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // Listar carros activos (paginado, sin imageData)
 exports.listActive = async (req, res) => {
   try {
@@ -81,7 +141,6 @@ exports.listActive = async (req, res) => {
       totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
-    console.error('Error en listActive:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -128,10 +187,9 @@ exports.listDeleted = async (req, res) => {
       totalPages: Math.ceil(count / limit)
     });
   } catch (error) {
-    console.error('Error en listDeleted:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };
@@ -153,7 +211,6 @@ exports.getById = async (req, res) => {
     });
     res.json({ success: true, data: car });
   } catch (error) {
-    console.error('Error en getById:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -177,7 +234,6 @@ exports.getImage = async (req, res) => {
     }
     return res.status(404).json({ error: 'Imagen no encontrada' });
   } catch (error) {
-    console.error('Error en getImage:', error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -199,7 +255,6 @@ exports.create = async (req, res) => {
     if (latitude !== undefined && longitude !== undefined) {
       carData.location = { type: 'Point', coordinates: [longitude, latitude] };
     }
-    // Poner Validacion para lat y long 
 
     const car = await Car.create(carData);
 
@@ -229,7 +284,6 @@ exports.create = async (req, res) => {
     delete responseCar.imageData;
     res.status(201).json({ success: true, message: 'Carro creado exitosamente', data: responseCar });
   } catch (error) {
-    console.error('Error en create:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -242,7 +296,7 @@ exports.edit = async (req, res) => {
       return res.status(400).json({ success: false, error: 'ID de carro inválido' });
     }
 
-    const car = await Car.findByPk(id, { 
+    const car = await Car.findByPk(id, {
       include: [{
         model: require('../models').User,
         as: 'user',
@@ -330,7 +384,6 @@ exports.edit = async (req, res) => {
     const updatedCar = await Car.findByPk(id, { attributes: { exclude: ['imageData'] }, include: ['user'] });
     res.json({ success: true, message: 'Carro editado exitosamente', data: updatedCar, updated_fields: Object.keys(updateData) });
   } catch (error) {
-    console.error('Error al editar carro:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al editar el carro' });
   }
 };
@@ -376,7 +429,6 @@ exports.update = async (req, res) => {
     delete responseCar.imageData;
     res.json({ success: true, message: 'Carro actualizado exitosamente', data: responseCar });
   } catch (error) {
-    console.error('Error en update:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -399,7 +451,6 @@ exports.softDelete = async (req, res) => {
     await car.destroy();
     res.json({ success: true, message: 'Carro eliminado exitosamente' });
   } catch (error) {
-    console.error('Error en softDelete:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -427,7 +478,6 @@ exports.restore = async (req, res) => {
     delete responseCar.imageData;
     res.json({ success: true, message: 'Carro restaurado exitosamente', data: responseCar });
   } catch (error) {
-    console.error('Error en restore:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -450,7 +500,6 @@ exports.forceDelete = async (req, res) => {
     await car.destroy({ force: true });
     res.json({ success: true, message: 'Carro eliminado permanentemente' });
   } catch (error) {
-    console.error('Error en forceDelete:', error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -477,7 +526,6 @@ exports.patchDelete = async (req, res) => {
     await car.destroy();
     res.json({ success: true, message: 'Carro eliminado exitosamente' });
   } catch (error) {
-    console.error('Error al eliminar carro:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al eliminar el carro' });
   }
 };
@@ -508,7 +556,6 @@ exports.patchRestore = async (req, res) => {
     delete responseCar.imageData;
     res.json({ success: true, message: 'Carro restaurado exitosamente', data: responseCar });
   } catch (error) {
-    console.error('Error al restaurar carro:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al restaurar el carro' });
   }
 };
@@ -532,7 +579,6 @@ exports.getByUser = async (req, res) => {
     });
     res.json({ success: true, data: cars, count: cars.length });
   } catch (error) {
-    console.error('Error en getByUser:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener carros del usuario' });
   }
 };
@@ -546,7 +592,6 @@ exports.statsCount = async (req, res) => {
     const deletedCars = await Car.count({ where: { deletedAt: { [Op.ne]: null } }, paranoid: false });
     res.json({ success: true, data: { total: totalCars, with_images: totalWithImages, with_location: totalWithLocation, deleted: deletedCars } });
   } catch (error) {
-    console.error('Error en statsCount:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener estadísticas' });
   }
 };
@@ -568,7 +613,6 @@ exports.getWithImage = async (req, res) => {
     if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
     res.json({ success: true, data: car });
   } catch (error) {
-    console.error('Error en getWithImage:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el carro' });
   }
 };
@@ -594,7 +638,6 @@ exports.getByLicensePlate = async (req, res) => {
     }
     res.json({ success: true, data: car });
   } catch (error) {
-    console.error('Error en getByLicensePlate:', error);
     res.status(500).json({ success: false, error: 'Error interno del servidor' });
   }
 };
