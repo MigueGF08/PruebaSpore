@@ -3,11 +3,148 @@ const { Car } = db;
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const config = require('../config/config');
 const {
   parsePageLimit,
   sanitizeQueryString,
   parsePositiveInt
 } = require('../utils/validators');
+
+// Validaciones específicas para carros
+const validateCarData = (data) => {
+  const errors = [];
+
+  // Validar userId
+  if (!data.userId) {
+    errors.push('User ID is required');
+  } else if (isNaN(parseInt(data.userId)) || parseInt(data.userId) <= 0) {
+    errors.push('User ID must be a positive number');
+  }
+
+  // Validar licensePlate
+  if (!data.licensePlate) {
+    errors.push('License plate is required');
+  } else if (typeof data.licensePlate !== 'string' || data.licensePlate.trim().length === 0) {
+    errors.push('License plate must be a valid string');
+  } else if (data.licensePlate.trim().length < 3 || data.licensePlate.trim().length > 20) {
+    errors.push('License plate must be between 3 and 20 characters');
+  }
+
+  // Validar brand
+  if (!data.brand) {
+    errors.push('Brand is required');
+  } else if (typeof data.brand !== 'string' || data.brand.trim().length === 0) {
+    errors.push('Brand must be a valid string');
+  } else if (data.brand.trim().length < 2 || data.brand.trim().length > 50) {
+    errors.push('Brand must be between 2 and 50 characters');
+  }
+
+  // Validar model
+  if (!data.model) {
+    errors.push('Model is required');
+  } else if (typeof data.model !== 'string' || data.model.trim().length === 0) {
+    errors.push('Model must be a valid string');
+  } else if (data.model.trim().length < 2 || data.model.trim().length > 50) {
+    errors.push('Model must be between 2 and 50 characters');
+  }
+
+  // Validar color
+  if (!data.color) {
+    errors.push('Color is required');
+  } else if (typeof data.color !== 'string' || data.color.trim().length === 0) {
+    errors.push('Color must be a valid string');
+  } else if (data.color.trim().length < 2 || data.color.trim().length > 30) {
+    errors.push('Color must be between 2 and 30 characters');
+  }
+
+  return errors;
+};
+
+// Validar que el usuario existe y está activo
+const validateUserExists = async (userId) => {
+  try {
+    const User = require('../models').User;
+
+    // Hacer una sola consulta con todas las validaciones
+    const user = await User.findOne({
+      where: {
+        id: userId,
+        isActive: true,
+        deletedAt: null
+      },
+      attributes: ['id', 'email', 'firstName', 'lastName', 'role', 'isActive', 'deletedAt']
+    });
+
+    if (!user) {
+      return { exists: false, error: 'User not found or not active' };
+    }
+
+    return {
+      exists: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      }
+    };
+  } catch (error) {
+    console.error('Error validating user existence:', error);
+    return { exists: false, error: 'Database error while validating user' };
+  }
+};
+
+// Validar que la placa no esté duplicada
+const validateLicensePlateUnique = async (licensePlate, excludeId = null) => {
+  try {
+    let whereCondition = { licensePlate: licensePlate.trim(), deletedAt: null };
+    if (excludeId) {
+      whereCondition.id = { [Op.ne]: excludeId };
+    }
+
+    const existingCar = await Car.findOne({ where: whereCondition });
+    return !existingCar;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Validar datos de imagen base64
+const validateImageData = (imageData, imageName, imageType, imageSize) => {
+  const errors = [];
+
+  if (imageData !== undefined && imageData !== null && imageData !== '') {
+    // Validar que sea string base64
+    if (typeof imageData !== 'string') {
+      errors.push('Image data must be a base64 encoded string');
+    } else {
+      // Validar formato base64
+      try {
+        const buffer = Buffer.from(imageData, 'base64');
+        if (buffer.length === 0) {
+          errors.push('Image data cannot be empty');
+        } else if (buffer.length > 10 * 1024 * 1024) { // 10MB
+          errors.push('Image size cannot exceed 10MB');
+        }
+      } catch (error) {
+        errors.push('Invalid base64 image data');
+      }
+    }
+
+    // Validar tipo de imagen si se proporciona
+    if (imageType && !['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'].includes(imageType.toLowerCase())) {
+      errors.push('Image type must be jpeg, jpg, png, gif, or webp');
+    }
+
+    // Validar tamaño si se proporciona
+    if (imageSize && (isNaN(parseInt(imageSize)) || parseInt(imageSize) <= 0)) {
+      errors.push('Image size must be a positive number');
+    }
+  }
+
+  return errors;
+};
 
 // Directorio para almacenar imágenes de carros en disco
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads', 'cars');
@@ -243,20 +380,82 @@ exports.create = async (req, res) => {
   try {
     const { userId, licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
 
+    // Validar datos básicos del carro
     const carData = { userId, licensePlate, brand, model, color };
-
-    if (imageData) {
-      carData.imageData = Buffer.from(imageData, 'base64');
-      carData.imageName = imageName || 'car_image';
-      carData.imageType = imageType || 'image/jpeg';
-      carData.imageSize = imageSize || Math.round((imageData.length * 3) / 4 - 2);
+    const validationErrors = validateCarData(carData);
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: validationErrors
+      });
     }
 
+    // Validar que el usuario existe
+    const userValidation = await validateUserExists(userId);
+    if (!userValidation.exists) {
+      return res.status(400).json({
+        success: false,
+        error: userValidation.error
+      });
+    }
+
+    // Validar que la placa no esté duplicada
+    const isLicensePlateUnique = await validateLicensePlateUnique(licensePlate);
+    if (!isLicensePlateUnique) {
+      return res.status(409).json({
+        success: false,
+        error: 'License plate already exists'
+      });
+    }
+
+    // Validar imagen si se proporciona
+    if (imageData !== undefined) {
+      const imageErrors = validateImageData(imageData, imageName, imageType, imageSize);
+      if (imageErrors.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Image validation failed',
+          details: imageErrors
+        });
+      }
+    }
+
+    // Validar coordenadas si se proporcionan
     if (latitude !== undefined && longitude !== undefined) {
-      carData.location = { type: 'Point', coordinates: [longitude, latitude] };
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180'
+        });
+      }
     }
 
-    const car = await Car.create(carData);
+    // Preparar datos del carro
+    const finalCarData = {
+      userId: parseInt(userId),
+      licensePlate: licensePlate.trim(),
+      brand: brand.trim(),
+      model: model.trim(),
+      color: color.trim()
+    };
+
+    // Agregar imagen si se proporciona
+    if (imageData) {
+      finalCarData.imageData = Buffer.from(imageData, 'base64');
+      finalCarData.imageName = imageName || 'car_image';
+      finalCarData.imageType = imageType || 'image/jpeg';
+      finalCarData.imageSize = imageSize || Math.round((imageData.length * 3) / 4 - 2);
+    }
+
+    // Agregar ubicación si se proporciona
+    if (latitude !== undefined && longitude !== undefined) {
+      finalCarData.location = { type: 'Point', coordinates: [longitude, latitude] };
+    }
+
+    const car = await Car.create(finalCarData);
 
     // Guardar imagen en disco tras crear
     if (imageData) {
@@ -282,9 +481,16 @@ exports.create = async (req, res) => {
 
     const responseCar = car.toJSON();
     delete responseCar.imageData;
-    res.status(201).json({ success: true, message: 'Carro creado exitosamente', data: responseCar });
+    res.status(201).json({
+      success: true,
+      message: 'Car created successfully',
+      data: responseCar
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
@@ -313,11 +519,24 @@ exports.edit = async (req, res) => {
       if (isNaN(parseInt(userId)) || parseInt(userId) <= 0) {
         return res.status(400).json({ success: false, error: 'ID de usuario inválido. Debe ser un número positivo.' });
       }
+      // Validar que el usuario existe
+      const userValidation = await validateUserExists(userId);
+      if (!userValidation.exists) {
+        return res.status(400).json({ success: false, error: userValidation.error });
+      }
       updateData.userId = parseInt(userId);
     }
     if (licensePlate !== undefined) {
       if (typeof licensePlate !== 'string' || licensePlate.trim().length === 0) {
         return res.status(400).json({ success: false, error: 'La placa debe ser un texto válido' });
+      }
+      if (licensePlate.trim().length < 3 || licensePlate.trim().length > 20) {
+        return res.status(400).json({ success: false, error: 'La placa debe tener entre 3 y 20 caracteres' });
+      }
+      // Validar que la placa no esté duplicada (excluyendo el carro actual)
+      const isLicensePlateUnique = await validateLicensePlateUnique(licensePlate, id);
+      if (!isLicensePlateUnique) {
+        return res.status(400).json({ success: false, error: 'La placa ya existe' });
       }
       updateData.licensePlate = licensePlate.trim();
     }
@@ -325,17 +544,26 @@ exports.edit = async (req, res) => {
       if (typeof brand !== 'string' || brand.trim().length === 0) {
         return res.status(400).json({ success: false, error: 'La marca debe ser un texto válido' });
       }
+      if (brand.trim().length < 2 || brand.trim().length > 50) {
+        return res.status(400).json({ success: false, error: 'La marca debe tener entre 2 y 50 caracteres' });
+      }
       updateData.brand = brand.trim();
     }
     if (model !== undefined) {
       if (typeof model !== 'string' || model.trim().length === 0) {
         return res.status(400).json({ success: false, error: 'El modelo debe ser un texto válido' });
       }
+      if (model.trim().length < 2 || model.trim().length > 50) {
+        return res.status(400).json({ success: false, error: 'El modelo debe tener entre 2 y 50 caracteres' });
+      }
       updateData.model = model.trim();
     }
     if (color !== undefined) {
       if (typeof color !== 'string' || color.trim().length === 0) {
         return res.status(400).json({ success: false, error: 'El color debe ser un texto válido' });
+      }
+      if (color.trim().length < 2 || color.trim().length > 30) {
+        return res.status(400).json({ success: false, error: 'El color debe tener entre 2 y 30 caracteres' });
       }
       updateData.color = color.trim();
     }
@@ -347,8 +575,14 @@ exports.edit = async (req, res) => {
         updateData.imageType = null;
         updateData.imageSize = null;
       } else {
-        if (typeof imageData !== 'string') {
-          return res.status(400).json({ success: false, error: 'Los datos de imagen deben estar en formato base64' });
+        // Validar imagen
+        const imageErrors = validateImageData(imageData, imageName, imageType, imageSize);
+        if (imageErrors.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Error en datos de imagen',
+            details: imageErrors
+          });
         }
         updateData.imageData = Buffer.from(imageData, 'base64');
         updateData.imageName = imageName || car.imageName || 'car_image_updated';
@@ -393,25 +627,132 @@ exports.update = async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
-    const car = await Car.findByPk(id);
-    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
 
-    const updateData = { userId, licensePlate, brand, model, color };
+    // Validar ID del carro
+    if (!id || isNaN(parseInt(id))) {
+      return res.status(400).json({ success: false, error: 'Invalid car ID' });
+    }
+
+    const car = await Car.findByPk(id);
+    if (!car) {
+      return res.status(404).json({ success: false, error: 'Car not found' });
+    }
+
+    // Validar datos básicos si se proporcionan
+    const updateData = {};
+    let validationErrors = [];
+
+    if (userId !== undefined) {
+      if (isNaN(parseInt(userId)) || parseInt(userId) <= 0) {
+        validationErrors.push('User ID must be a positive number');
+      } else {
+        // Validar que el usuario existe
+        const userValidation = await validateUserExists(userId);
+        if (!userValidation.exists) {
+          validationErrors.push(userValidation.error);
+        } else {
+          updateData.userId = parseInt(userId);
+        }
+      }
+    }
+
+    if (licensePlate !== undefined) {
+      if (typeof licensePlate !== 'string' || licensePlate.trim().length === 0) {
+        validationErrors.push('License plate must be a valid string');
+      } else if (licensePlate.trim().length < 3 || licensePlate.trim().length > 20) {
+        validationErrors.push('License plate must be between 3 and 20 characters');
+      } else {
+        // Validar que la placa no esté duplicada (excluyendo el carro actual)
+        const isLicensePlateUnique = await validateLicensePlateUnique(licensePlate, id);
+        if (!isLicensePlateUnique) {
+          validationErrors.push('License plate already exists');
+        } else {
+          updateData.licensePlate = licensePlate.trim();
+        }
+      }
+    }
+
+    if (brand !== undefined) {
+      if (typeof brand !== 'string' || brand.trim().length === 0) {
+        validationErrors.push('Brand must be a valid string');
+      } else if (brand.trim().length < 2 || brand.trim().length > 50) {
+        validationErrors.push('Brand must be between 2 and 50 characters');
+      } else {
+        updateData.brand = brand.trim();
+      }
+    }
+
+    if (model !== undefined) {
+      if (typeof model !== 'string' || model.trim().length === 0) {
+        validationErrors.push('Model must be a valid string');
+      } else if (model.trim().length < 2 || model.trim().length > 50) {
+        validationErrors.push('Model must be between 2 and 50 characters');
+      } else {
+        updateData.model = model.trim();
+      }
+    }
+
+    if (color !== undefined) {
+      if (typeof color !== 'string' || color.trim().length === 0) {
+        validationErrors.push('Color must be a valid string');
+      } else if (color.trim().length < 2 || color.trim().length > 30) {
+        validationErrors.push('Color must be between 2 and 30 characters');
+      } else {
+        updateData.color = color.trim();
+      }
+    }
+
+    // Si hay errores de validación, devolverlos
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: validationErrors
+      });
+    }
+
+    // Validar imagen si se proporciona
     if (imageData !== undefined) {
-      if (imageData === null) {
+      if (imageData === null || imageData === '') {
         updateData.imageData = null;
         updateData.imageName = null;
         updateData.imageType = null;
         updateData.imageSize = null;
       } else {
+        const imageErrors = validateImageData(imageData, imageName, imageType, imageSize);
+        if (imageErrors.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Image validation failed',
+            details: imageErrors
+          });
+        }
         updateData.imageData = Buffer.from(imageData, 'base64');
         updateData.imageName = imageName || car.imageName || 'car_image';
         updateData.imageType = imageType || car.imageType || 'image/jpeg';
         updateData.imageSize = imageSize || Math.round((imageData.length * 3) / 4 - 2);
       }
     }
+
+    // Validar coordenadas si se proporcionan
     if (latitude !== undefined && longitude !== undefined) {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180'
+        });
+      }
       updateData.location = { type: 'Point', coordinates: [longitude, latitude] };
+    }
+
+    // Verificar que al menos un campo se va a actualizar
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No data provided for update'
+      });
     }
 
     await car.update(updateData);
@@ -427,9 +768,17 @@ exports.update = async (req, res) => {
 
     const responseCar = car.toJSON();
     delete responseCar.imageData;
-    res.json({ success: true, message: 'Carro actualizado exitosamente', data: responseCar });
+    res.json({
+      success: true,
+      message: 'Car updated successfully',
+      data: responseCar,
+      updated_fields: Object.keys(updateData)
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
   }
 };
 
@@ -567,6 +916,13 @@ exports.getByUser = async (req, res) => {
     if (!userId || isNaN(parseInt(userId))) {
       return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
     }
+
+    // Validar que el usuario existe
+    const userValidation = await validateUserExists(userId);
+    if (!userValidation.exists) {
+      return res.status(404).json({ success: false, error: userValidation.error });
+    }
+
     const cars = await Car.findAll({
       where: { userId: parseInt(userId), deletedAt: null },
       attributes: { exclude: ['imageData'] },
