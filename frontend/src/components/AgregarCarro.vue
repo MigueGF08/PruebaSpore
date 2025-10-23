@@ -198,8 +198,6 @@ const fetchUsers = async () => {
         
         const data = await response.json()
         
-        console.log('Datos de usuarios recibidos:', data) // Para debugging
-        
         if (data.success && data.data) {
             users.value = data.data
         } else if (data.success && Array.isArray(data)) {
@@ -209,7 +207,6 @@ const fetchUsers = async () => {
             throw new Error(data.error || 'Formato de datos incorrecto')
         }
     } catch (error) {
-        console.error('Error al cargar usuarios:', error)
         usersError.value = error.message
         await Swal.fire({
             icon: 'error',
@@ -345,7 +342,6 @@ const submitForm = async () => {
             })
         }
     } catch (error) {
-        console.error('Error:', error)
         await Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -379,7 +375,7 @@ const resetForm = () => {
 
 // Función para cerrar sesión
 const logout = () => {
-    console.log('Cerrando sesión...')
+    // Aquí puedes agregar lógica de logout si es necesario
 }
 </script>
 

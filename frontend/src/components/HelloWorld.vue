@@ -66,7 +66,6 @@ async function login() {
     })
 
     const data = await response.json()
-    console.log('Respuesta del login:', data); // DEBUG
 
     if (data.success) {
       // ¡CORREGIDO! Guardar datos en localStorage con los nombres correctos
@@ -74,15 +73,7 @@ async function login() {
       localStorage.setItem('authToken', data.data.token || data.data.id.toString());
       localStorage.setItem('userRole', data.data.role);
       localStorage.setItem('userName', `${data.data.firstName} ${data.data.lastName}`);
-      
-      // DEBUG: Verificar que se guardó correctamente
-      console.log('Datos guardados en localStorage:', {
-        userId: localStorage.getItem('userId'),
-        authToken: localStorage.getItem('authToken'),
-        userRole: localStorage.getItem('userRole'),
-        userName: localStorage.getItem('userName')
-      });
-      
+
       // Redirigir al dashboard o principal
       router.push({ name: 'Principal' })
     } else {
@@ -90,7 +81,6 @@ async function login() {
     }
   } catch (err) {
     error.value = 'Error de conexión. Verifica que el servidor esté funcionando.'
-    console.error('Login error:', err)
   } finally {
     loading.value = false
   }

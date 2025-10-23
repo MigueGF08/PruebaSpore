@@ -268,7 +268,6 @@ export default {
           text: 'Please check if the server is running',
           confirmButtonColor: '#e74c3c'
         })
-        console.error('Registration error:', error)
       } finally {
         loading.value = false
       }

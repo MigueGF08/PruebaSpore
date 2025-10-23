@@ -97,11 +97,9 @@ export default {
     const setupSocket = () => {
       try {
         if (typeof io === 'undefined') {
-          console.warn('Socket.io no está disponible. Modo sin tiempo real.')
           return
         }
 
-        console.log('🔗 Intentando conectar con Socket.io...')
         socket = io(SOCKET_URL, {
           transports: ['polling'],
           reconnection: true,
@@ -113,7 +111,6 @@ export default {
         })
 
         socket.on('connect', () => {
-          console.log('✅ Conectado al servidor Socket.io via polling')
           realTimeActive.value = true
           if (isAdmin.value) {
             socket.emit('join-admin-room')
@@ -130,7 +127,6 @@ export default {
         socket.on('car-updated', handleCarUpdated)
         socket.on('car-deleted', handleCarDeleted)
       } catch (e) {
-        console.error('Error configurando Socket.io:', e)
         realTimeActive.value = false
       }
     }
@@ -218,7 +214,6 @@ export default {
         const data = await res.json()
         return data.success ? (data.data || data.carros || []) : []
       } catch (err) {
-        console.error('❌ Error fetching cars:', err)
         return []
       }
     }
@@ -236,7 +231,6 @@ export default {
         if (markers.value.size === 0) map.setView([19.4326, -99.1332], 10)
         loading.value = false
       } catch (e) {
-        console.error('❌ Error inicializando componente:', e)
         loading.value = false
       }
     })

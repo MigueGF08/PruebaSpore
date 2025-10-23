@@ -366,11 +366,95 @@ const showDeletedFilterCars = ref(false)
 const activeTotalPages = ref(1)
 const deletedTotalPages = ref(1)
 
+// Función para obtener carros (paginado backend)
+async function fetchCars() {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    // Obtener carros activos (con page/limit)
+    const qQS = searchQueryCars.value ? `&q=${encodeURIComponent(searchQueryCars.value)}` : ''
+    const activeUrl = apiUrl(`/api/carros?page=${activePage.value}&limit=10${qQS}`)
+    const activeRes = await fetch(activeUrl)
+
+    if (!activeRes.ok) throw new Error('Error al obtener carros activos')
+
+    const activeData = await activeRes.json()
+
+    // Obtener carros eliminados (con page/limit y búsqueda)
+    const delQQS = searchDeletedCars.value ? `&q=${encodeURIComponent(searchDeletedCars.value)}` : ''
+    const deletedUrl = apiUrl(`/api/carros/deleted?page=${deletedPage.value}&limit=10${delQQS}`)
+    const deletedRes = await fetch(deletedUrl)
+
+    if (!deletedRes.ok) throw new Error('Error al obtener carros eliminados')
+
+    const deletedData = await deletedRes.json()
+
+    if (activeData.success) {
+      cars.value = activeData.data
+      activeTotalPages.value = activeData.totalPages || 1
+    } else {
+      errorMessage.value = activeData.error || 'No se pudieron cargar los carros activos'
+    }
+
+    if (deletedData.success) {
+      deletedCars.value = deletedData.data
+      deletedTotalPages.value = deletedData.totalPages || 1
+    }
+
+  } catch (err) {
+    errorMessage.value = 'Error de conexión al obtener carros'
+  } finally {
+    loading.value = false
+  }
+}
+
+// Paginación (controlada por backend)
+const activePage = ref(1)
+function nextActivePage() {
+  if (activePage.value < activeTotalPages.value) {
+    activePage.value++
+    fetchCars()
+  }
+}
+function prevActivePage() {
+  if (activePage.value > 1) {
+    activePage.value--
+    fetchCars()
+  }
+}
+
+const deletedPage = ref(1)
+function nextDeletedPage() {
+  if (deletedPage.value < deletedTotalPages.value) {
+    deletedPage.value++
+    fetchCars()
+  }
+}
+function prevDeletedPage() {
+  if (deletedPage.value > 1) {
+    deletedPage.value--
+    fetchCars()
+  }
+}
+
 // Función para verificar si un carro tiene imagen
-// Opción A: si no hay data embebida, intentamos cargarla por ID desde el backend
 const hasImage = (car) => {
-  if (car.imageData || (car.image && car.image.data)) return true;
-  return !!car.id; // intentar con /api/carros/:id/imagen
+  // Si ya tenemos imageData (base64 string)
+  if (car.imageData) {
+    return true;
+  }
+
+  // Si tenemos un objeto image con data
+  if (car.image && car.image.data) {
+    return true;
+  }
+
+  // Fallback: si tiene ID, intentar obtener desde backend
+  if (car.id) {
+    return true;
+  }
+
+  return false;
 }
 
 // Función para obtener la URL de la imagen
@@ -410,14 +494,12 @@ const getImageUrl = (car) => {
     }
     return '';
   } catch (error) {
-    console.error('Error procesando imagen:', error, car);
     return '';
   }
 }
 
 // Manejar errores de carga de imágenes
 const handleImageError = (event) => {
-  console.warn('Error cargando imagen, mostrando placeholder');
   event.target.style.display = 'none';
   const container = event.target.parentElement;
   const noImageDiv = container.querySelector('.no-image') || document.createElement('div');
@@ -425,45 +507,6 @@ const handleImageError = (event) => {
   noImageDiv.innerHTML = '<span>🚗</span><p>Sin imagen</p>';
   if (!container.querySelector('.no-image')) {
     container.appendChild(noImageDiv);
-  }
-}
-
-// Función para obtener carros (paginado backend)
-async function fetchCars() {
-  loading.value = true
-  errorMessage.value = ''
-  try {
-    // Obtener carros activos (backend pagination + filtro q)
-    const activeUrl = apiUrl(`/api/carros?page=${activePage.value}&limit=${carsPerPage}${searchQueryCars.value ? `&q=${encodeURIComponent(searchQueryCars.value)}` : ''}`)
-    const activeRes = await fetch(activeUrl)
-    const activeData = await activeRes.json()
-    
-    // Obtener carros eliminados (backend pagination + filtro q)
-    const deletedUrl = apiUrl(`/api/carros/deleted?page=${deletedPage.value}&limit=${carsPerPage}${searchDeletedCars.value ? `&q=${encodeURIComponent(searchDeletedCars.value)}` : ''}`)
-    const deletedRes = await fetch(deletedUrl)
-    const deletedData = await deletedRes.json()
-    
-    if (activeData.success) {
-      cars.value = activeData.data
-      activeTotalPages.value = activeData.totalPages || 1
-      console.log('Carros activos cargados:', cars.value)
-    } else {
-      errorMessage.value = activeData.error || 'No se pudieron cargar los carros activos'
-    }
-    
-    if (deletedData.success) {
-      deletedCars.value = deletedData.data
-      deletedTotalPages.value = deletedData.totalPages || 1
-      console.log('Carros eliminados cargados:', deletedCars.value)
-    }
-    
-    // No reiniciamos páginas aquí para permitir navegación
-    
-  } catch (err) {
-    errorMessage.value = 'Error de conexión al obtener carros'
-    console.error('Error fetching cars:', err)
-  } finally {
-    loading.value = false
   }
 }
 
@@ -675,7 +718,6 @@ async function saveCarChanges() {
       })
     }
   } catch (err) {
-    console.error('Error al guardar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -729,7 +771,6 @@ async function deleteCar(id) {
       })
     }
   } catch (err) {
-    console.error('Error al eliminar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -777,7 +818,6 @@ async function restoreCar(id) {
       })
     }
   } catch (err) {
-    console.error('Error al restaurar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -802,11 +842,11 @@ function formatDate(dateString) {
 
 // Función para cerrar sesión
 function logout() {
-  console.log('Cerrando sesión...')
+  // Aquí puedes agregar lógica de logout si es necesario
 }
 
 // Cargar datos al montar el componente
-onMounted(fetchCars)
+onMounted(() => fetchCars())
 
 // Limpiar el mapa cuando el componente se desmonte
 onUnmounted(() => {
@@ -815,36 +855,6 @@ onUnmounted(() => {
   }
 })
 
-const carsPerPage = 10
-
-// Paginación (controlada por backend)
-const activePage = ref(1)
-function nextActivePage() {
-  if (activePage.value < activeTotalPages.value) {
-    activePage.value++
-    fetchCars()
-  }
-}
-function prevActivePage() {
-  if (activePage.value > 1) {
-    activePage.value--
-    fetchCars()
-  }
-}
-
-const deletedPage = ref(1)
-function nextDeletedPage() {
-  if (deletedPage.value < deletedTotalPages.value) {
-    deletedPage.value++
-    fetchCars()
-  }
-}
-function prevDeletedPage() {
-  if (deletedPage.value > 1) {
-    deletedPage.value--
-    fetchCars()
-  }
-}
 </script>
 
 <style scoped>
@@ -1037,8 +1047,6 @@ function prevDeletedPage() {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-@reference "tailwindcss";
-
 /* Principal container */
 .principal {
   max-width: 1000px;
@@ -1101,24 +1109,6 @@ function prevDeletedPage() {
   left: 12px;
   color: #666;
   font-size: 18px;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 14px 12px 40px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-  background: #fff;
-  color: #111827;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-input:focus { 
-  outline: none; 
-  border-color: #42b983; 
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2); 
 }
 
 .form-actions { 

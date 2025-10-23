@@ -252,14 +252,12 @@ async function fetchCurrentUser() {
     
     if (data.success) {
       currentUser.value = data.data
-      console.log('Usuario actual cargado:', currentUser.value)
     } else {
       errorMessage.value = data.error || 'No se pudo cargar la información del usuario'
     }
     
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener información del usuario'
-    console.error('Error fetching current user:', err)
   } finally {
     loading.value = false
   }
@@ -282,7 +280,6 @@ function getCurrentUserId() {
   //     const payload = JSON.parse(atob(token.split('.')[1]))
   //     return payload.userId || payload.id
   //   } catch (err) {
-  //     console.error('Error decodificando token:', err)
   //     return null
   //   }
   // }
@@ -351,7 +348,6 @@ async function saveProfileChanges() {
       })
     }
   } catch (err) {
-    console.error('Error al guardar perfil:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -446,7 +442,6 @@ async function changePassword() {
       })
     }
   } catch (err) {
-    console.error('Error al cambiar contraseña:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -475,7 +470,6 @@ function logout() {
   localStorage.removeItem('userId')
   localStorage.removeItem('token')
   sessionStorage.clear()
-  console.log('Cerrando sesión...')
 }
 // Cargar datos al montar el componente
 onMounted(fetchCurrentUser)

@@ -689,10 +689,11 @@ async function fetchUsers() {
 
     const activeUrl = apiUrl(`/api/usuarios?page=${activePage.value}&limit=${usersPerPage}${qQS}${roleQS}${phoneQS}`)
     const activeRes = await fetch(activeUrl)
+
     if (!activeRes.ok) throw new Error('Error al obtener usuarios activos')
-    
+
     const activeData = await activeRes.json()
-    
+
     // Obtener usuarios eliminados (con page/limit y filtros)
     const delRoleParts = []
     if (filterDeletedRoleUser.value) delRoleParts.push('user')
@@ -702,27 +703,26 @@ async function fetchUsers() {
     const delQQS = searchDeletedQuery.value ? `&q=${encodeURIComponent(searchDeletedQuery.value)}` : ''
     const deletedUrl = apiUrl(`/api/usuarios/deleted?page=${deletedPage.value}&limit=${usersPerPage}${delQQS}${delRoleQS}${delPhoneQS}`)
     const deletedRes = await fetch(deletedUrl)
+
     if (!deletedRes.ok) throw new Error('Error al obtener usuarios eliminados')
-    
+
     const deletedData = await deletedRes.json()
-    
+
     if (activeData.success) {
       users.value = activeData.data
       activeTotalPages.value = activeData.totalPages || 1
-      console.log('Usuarios cargados:', users.value) // Para debug
     } else {
       errorMessage.value = activeData.error || 'No se pudieron cargar los usuarios activos'
     }
-    
+
     if (deletedData.success) {
       deletedUsers.value = deletedData.data
       deletedTotalPages.value = deletedData.totalPages || 1
     }
-    
+
     // No reiniciar páginas para permitir navegar
   } catch (err) {
     errorMessage.value = 'Error de conexión al obtener usuarios'
-    console.error('Error fetching users:', err)
   } finally {
     loading.value = false
   }
@@ -793,7 +793,6 @@ async function createNewUser() {
       })
     }
   } catch (err) {
-    console.error('Error al crear usuario:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -869,7 +868,6 @@ async function resetPassword() {
       })
     }
   } catch (err) {
-    console.error('Error al restablecer contraseña:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -879,11 +877,6 @@ async function resetPassword() {
   } finally {
     resettingPassword.value = false
   }
-}
-
-// Función para manejar búsqueda
-function handleSearch() {
-  // Puedes agregar lógica adicional aquí si necesitas
 }
 
 // Función para limpiar búsqueda
@@ -953,7 +946,6 @@ async function saveUserChanges() {
       })
     }
   } catch (err) {
-    console.error('Error al guardar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -1004,7 +996,6 @@ async function deleteUser(id) {
       })
     }
   } catch (err) {
-    console.error('Error al eliminar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -1053,7 +1044,6 @@ async function restoreUser(id) {
       })
     }
   } catch (err) {
-    console.error('Error al restaurar:', err)
     await Swal.fire({
       icon: 'error',
       title: 'Error de conexión',
@@ -1079,7 +1069,6 @@ function formatDate(dateString) {
 // Función para cerrar sesión
 function logout() {
   // Aquí puedes agregar lógica de logout si es necesario
-  console.log('Cerrando sesión...')
 }
 
 // Cargar datos al montar el componente
