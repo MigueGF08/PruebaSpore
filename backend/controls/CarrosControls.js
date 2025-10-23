@@ -7,7 +7,8 @@ const config = require('../config/config');
 const {
   parsePageLimit,
   sanitizeQueryString,
-  parsePositiveInt
+  parsePositiveInt,
+  validatePositiveInt
 } = require('../utils/validators');
 
 // Validaciones específicas para carros
@@ -335,9 +336,13 @@ exports.listDeleted = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!parsePositiveInt(id)) {
-      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
+
     const car = await Car.findByPk(id, {
       attributes: { exclude: ['imageData'] },
       include: [{
@@ -356,11 +361,15 @@ exports.getById = async (req, res) => {
 exports.getImage = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!parsePositiveInt(id)) {
-      return res.status(400).json({ error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
+
     const car = await Car.findByPk(id, { attributes: ['imageName', 'imageType'] });
-    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
 
     // Servir desde disco
     if (car.imageName) {
@@ -498,8 +507,11 @@ exports.create = async (req, res) => {
 exports.edit = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
 
     const car = await Car.findByPk(id, {
@@ -516,15 +528,16 @@ exports.edit = async (req, res) => {
     const updateData = {};
 
     if (userId !== undefined) {
-      if (isNaN(parseInt(userId)) || parseInt(userId) <= 0) {
-        return res.status(400).json({ success: false, error: 'ID de usuario inválido. Debe ser un número positivo.' });
+      const userIdValidation = validatePositiveInt(userId);
+      if (!userIdValidation.valid) {
+        return res.status(400).json({ success: false, error: userIdValidation.error });
       }
       // Validar que el usuario existe
       const userValidation = await validateUserExists(userId);
       if (!userValidation.exists) {
         return res.status(400).json({ success: false, error: userValidation.error });
       }
-      updateData.userId = parseInt(userId);
+      updateData.userId = userIdValidation.value;
     }
     if (licensePlate !== undefined) {
       if (typeof licensePlate !== 'string' || licensePlate.trim().length === 0) {
@@ -629,8 +642,9 @@ exports.update = async (req, res) => {
     const { userId, licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
 
     // Validar ID del carro
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ success: false, error: 'Invalid car ID' });
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
 
     const car = await Car.findByPk(id);
@@ -643,15 +657,16 @@ exports.update = async (req, res) => {
     let validationErrors = [];
 
     if (userId !== undefined) {
-      if (isNaN(parseInt(userId)) || parseInt(userId) <= 0) {
-        validationErrors.push('User ID must be a positive number');
+      const userIdValidation = validatePositiveInt(userId);
+      if (!userIdValidation.valid) {
+        validationErrors.push(userIdValidation.error);
       } else {
         // Validar que el usuario existe
         const userValidation = await validateUserExists(userId);
         if (!userValidation.exists) {
           validationErrors.push(userValidation.error);
         } else {
-          updateData.userId = parseInt(userId);
+          updateData.userId = userIdValidation.value;
         }
       }
     }
@@ -786,8 +801,15 @@ exports.update = async (req, res) => {
 exports.softDelete = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
+    }
+
     const car = await Car.findByPk(id);
-    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
 
     if (req.io) {
       const carData = { id: parseInt(id), userId: car.userId };
@@ -808,9 +830,16 @@ exports.softDelete = async (req, res) => {
 exports.restore = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
+    }
+
     const car = await Car.findByPk(id, { paranoid: false });
-    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
-    if (!car.deletedAt) return res.status(400).json({ error: 'El carro no está eliminado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
+    if (!car.deletedAt) return res.status(400).json({ success: false, error: 'Car is not deleted' });
 
     await car.restore();
 
@@ -835,8 +864,15 @@ exports.restore = async (req, res) => {
 exports.forceDelete = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
+    }
+
     const car = await Car.findByPk(id, { paranoid: false });
-    if (!car) return res.status(404).json({ error: 'Carro no encontrado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
 
     if (req.io) {
       const carData = { id: parseInt(id), userId: car.userId };
@@ -857,12 +893,16 @@ exports.forceDelete = async (req, res) => {
 exports.patchDelete = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
+
     const car = await Car.findByPk(id);
-    if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
-    if (car.deletedAt) return res.status(400).json({ success: false, error: 'El carro ya está eliminado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
+    if (car.deletedAt) return res.status(400).json({ success: false, error: 'Car is already deleted' });
 
     if (req.io) {
       const carData = { id: parseInt(id), userId: car.userId };
@@ -883,12 +923,16 @@ exports.patchDelete = async (req, res) => {
 exports.patchRestore = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
+
     const car = await Car.findByPk(id, { paranoid: false });
-    if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
-    if (!car.deletedAt) return res.status(400).json({ success: false, error: 'El carro no está eliminado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
+    if (!car.deletedAt) return res.status(400).json({ success: false, error: 'Car is not deleted' });
 
     await car.restore();
 
@@ -913,8 +957,11 @@ exports.patchRestore = async (req, res) => {
 exports.getByUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId || isNaN(parseInt(userId))) {
-      return res.status(400).json({ success: false, error: 'ID de usuario inválido' });
+
+    // Validar ID del usuario
+    const userIdValidation = validatePositiveInt(userId);
+    if (!userIdValidation.valid) {
+      return res.status(400).json({ success: false, error: userIdValidation.error });
     }
 
     // Validar que el usuario existe
@@ -924,7 +971,7 @@ exports.getByUser = async (req, res) => {
     }
 
     const cars = await Car.findAll({
-      where: { userId: parseInt(userId), deletedAt: null },
+      where: { userId: userIdValidation.value, deletedAt: null },
       attributes: { exclude: ['imageData'] },
       include: [{
         model: require('../models').User,
@@ -935,7 +982,7 @@ exports.getByUser = async (req, res) => {
     });
     res.json({ success: true, data: cars, count: cars.length });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Error interno del servidor al obtener carros del usuario' });
+    res.status(500).json({ success: false, error: 'Internal server error while getting user cars' });
   }
 };
 
@@ -956,9 +1003,13 @@ exports.statsCount = async (req, res) => {
 exports.getWithImage = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || isNaN(parseInt(id))) {
-      return res.status(400).json({ success: false, error: 'ID de carro inválido' });
+
+    // Validar ID del carro
+    const idValidation = validatePositiveInt(id);
+    if (!idValidation.valid) {
+      return res.status(400).json({ success: false, error: idValidation.error });
     }
+
     const car = await Car.findByPk(id, {
       include: [{
         model: require('../models').User,
@@ -966,10 +1017,10 @@ exports.getWithImage = async (req, res) => {
         attributes: ['id', 'firstName', 'lastName', 'email']
       }]
     });
-    if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
+    if (!car) return res.status(404).json({ success: false, error: 'Car not found' });
     res.json({ success: true, data: car });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Error interno del servidor al obtener el carro' });
+    res.status(500).json({ success: false, error: 'Internal server error while getting car' });
   }
 };
 

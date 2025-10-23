@@ -6,6 +6,28 @@ function parsePositiveInt(value, fallback = null) {
   return n;
 }
 
+function validatePositiveInt(value) {
+  if (value === undefined || value === null || value === '') {
+    return { valid: false, error: 'ID is required' };
+  }
+
+  const parsed = parsePositiveInt(value);
+  if (parsed === null) {
+    const numValue = Number(value);
+    if (isNaN(numValue)) {
+      return { valid: false, error: 'ID must be a number' };
+    } else if (!Number.isInteger(numValue)) {
+      return { valid: false, error: 'ID must be an integer' };
+    } else if (numValue <= 0) {
+      return { valid: false, error: 'ID must be a positive number' };
+    } else {
+      return { valid: false, error: 'Invalid ID format' };
+    }
+  }
+
+  return { valid: true, value: parsed };
+}
+
 function parsePageLimit(queryPage, queryLimit, defaults = { page: 1, limit: 10, maxLimit: 100 }) {
   const page = parsePositiveInt(queryPage, defaults.page) || defaults.page;
   let limit = parsePositiveInt(queryLimit, defaults.limit) || defaults.limit;
@@ -51,6 +73,7 @@ function sanitizeQueryString(q) {
 
 module.exports = {
   parsePositiveInt,
+  validatePositiveInt,
   parsePageLimit,
   validateEmail,
   validateRole,

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const UsersCtrl = require('../controls/AuthLoginControls');
+const UsersCtrl = require('../controls/UsuariosControls');
 
 /**
  * @swagger
@@ -117,11 +117,8 @@ router.get('/:id', UsersCtrl.getUserById);
  *       409:
  *         description: El usuario ya existe
  */
-// POST /api/users/register - Register new user
+// POST /api/users/register - Register new user (moved to /api/auth/register)
 router.post('/register', UsersCtrl.registerUser);
-
-// POST /api/users/login - User login
-router.post('/login', UsersCtrl.loginUser);
 
 // PUT /api/users/:id - Update user (admin version)
 router.put('/:id', UsersCtrl.adminUpdateUser);

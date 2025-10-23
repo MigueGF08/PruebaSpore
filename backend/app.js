@@ -149,11 +149,12 @@ if (!sequelize) {
               path: req.path,
               method: req.method,
               availableEndpoints: [
+                'POST /api/auth/login',
+                'POST /api/auth/register',
                 'GET /api/usuarios',
                 'GET /api/usuarios/debug/all',
                 'GET /api/usuarios/deleted',
                 'POST /api/usuarios/register',
-                'POST /api/usuarios/login',
                 'PUT /api/usuarios/:id',
                 'DELETE /api/usuarios/:id',
                 'GET /api/carros',

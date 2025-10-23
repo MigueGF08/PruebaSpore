@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const UsersCtrl = require('../controls/AuthLoginControls');
+const AuthCtrl = require('../controls/AuthLoginControls');
+const UsersCtrl = require('../controls/UsuariosControls');
 
 /**
  * @swagger
@@ -40,7 +41,7 @@ const UsersCtrl = require('../controls/AuthLoginControls');
  *         description: Error interno del servidor
  */
 // POST /api/auth/login - Login de usuario
-router.post('/login', UsersCtrl.loginUser);
+router.post('/login', AuthCtrl.loginUser);
 
 /**
  * @swagger
