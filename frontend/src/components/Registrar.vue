@@ -1,104 +1,100 @@
 <template>
-  <div class="principal">
-    <!-- Navbar -->
-  
-
-    <!-- Contenido principal -->
+  <div class="max-w-2xl mx-auto my-10 p-6 border border-gray-300 rounded-lg bg-gray-50 text-center">
     <header>
-      <h1>User Registration</h1>
+      <h1 class="text-2xl font-bold mb-4 text-gray-800">User Registration</h1>
     </header>
 
-    <form @submit.prevent="handleRegister" class="register-form">
+    <form @submit.prevent="handleRegister" class="text-left my-5">
       <!-- First Name -->
-      <div class="form-group">
-        <label for="firstName">First Name *</label>
+      <div class="mb-5 relative">
+        <label for="firstName" class="block mb-2 text-gray-700 font-medium text-sm">First Name *</label>
         <input
           type="text"
           id="firstName"
           v-model="user.firstName"
           required
           placeholder="Your first name"
-          :class="{ 'error-input': errors.firstName }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.firstName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.firstName" class="error-text">{{ errors.firstName }}</span>
+        <span v-if="errors.firstName" class="text-red-500 text-sm mt-1 block">{{ errors.firstName }}</span>
       </div>
 
       <!-- Last Name -->
-      <div class="form-group">
-        <label for="lastName">Last Name *</label>
+      <div class="mb-5 relative">
+        <label for="lastName" class="block mb-2 text-gray-700 font-medium text-sm">Last Name *</label>
         <input
           type="text"
           id="lastName"
           v-model="user.lastName"
           required
           placeholder="Your last name"
-          :class="{ 'error-input': errors.lastName }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.lastName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.lastName" class="error-text">{{ errors.lastName }}</span>
+        <span v-if="errors.lastName" class="text-red-500 text-sm mt-1 block">{{ errors.lastName }}</span>
       </div>
 
       <!-- Email -->
-      <div class="form-group">
-        <label for="email">Email *</label>
+      <div class="mb-5 relative">
+        <label for="email" class="block mb-2 text-gray-700 font-medium text-sm">Email *</label>
         <input
           type="email"
           id="email"
           v-model="user.email"
           required
           placeholder="your.email@example.com"
-          :class="{ 'error-input': errors.email }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.email ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
+        <span v-if="errors.email" class="text-red-500 text-sm mt-1 block">{{ errors.email }}</span>
       </div>
 
       <!-- Phone -->
-      <div class="form-group">
-        <label for="phone">Phone</label>
+      <div class="mb-5 relative">
+        <label for="phone" class="block mb-2 text-gray-700 font-medium text-sm">Phone</label>
         <input
           type="tel"
           id="phone"
           v-model="user.phone"
           placeholder="+1234567890"
-          :class="{ 'error-input': errors.phone }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.phone ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
+        <span v-if="errors.phone" class="text-red-500 text-sm mt-1 block">{{ errors.phone }}</span>
       </div>
 
       <!-- Password -->
-      <div class="form-group">
-        <label for="password">Password *</label>
+      <div class="mb-5 relative">
+        <label for="password" class="block mb-2 text-gray-700 font-medium text-sm">Password *</label>
         <input
           type="password"
           id="password"
           v-model="user.password"
           required
           placeholder="Min 8 characters with uppercase, lowercase, number & special"
-          :class="{ 'error-input': errors.password }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.password ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
-        <div class="password-requirements">
+        <span v-if="errors.password" class="text-red-500 text-sm mt-1 block">{{ errors.password }}</span>
+        <div class="mt-1 text-gray-600 text-xs">
           <small>Must include: uppercase, lowercase, number, special character (@$!%*?&)</small>
         </div>
       </div>
 
       <!-- Confirm Password -->
-      <div class="form-group">
-        <label for="confirmPassword">Confirm Password *</label>
+      <div class="mb-5 relative">
+        <label for="confirmPassword" class="block mb-2 text-gray-700 font-medium text-sm">Confirm Password *</label>
         <input
           type="password"
           id="confirmPassword"
           v-model="user.confirmPassword"
           required
           placeholder="Repeat your password"
-          :class="{ 'error-input': errors.confirmPassword }"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
-        <span v-if="errors.confirmPassword" class="error-text">{{ errors.confirmPassword }}</span>
+        <span v-if="errors.confirmPassword" class="text-red-500 text-sm mt-1 block">{{ errors.confirmPassword }}</span>
       </div>
 
       <!-- Botón de registro -->
-      <button 
-        type="submit" 
-        class="register-btn"
+      <button
+        type="submit"
+        class="w-full p-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer mt-4 transition-colors duration-200 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
         :disabled="loading"
       >
         <span v-if="loading">Registering...</span>
@@ -106,7 +102,7 @@
       </button>
     </form>
 
-    <p class="login-link">
+    <p class="text-center mt-6 text-gray-600 text-sm">
     </p>
   </div>
 </template>
@@ -282,153 +278,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-@reference "tailwindcss";
-
-.principal {
-    max-width: 600px;
-    margin: 40px auto;
-    padding: 24px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fafafa;
-    text-align: center;
-}
-
-.navbar {
-    width: 100%;
-    background: #42b983;
-    border-radius: 6px 6px 0 0;
-    margin-bottom: 24px;
-    padding: 0;
-}
-
-.navbar ul {
-    list-style: none;
-    display: flex;
-    justify-content: center;
-    margin: 0;
-    padding: 0;
-}
-
-.navbar li {
-    margin: 0 16px;
-}
-
-.nav-link {
-    color: #fff;
-    text-decoration: none;
-    font-weight: bold;
-    padding: 12px 8px;
-    display: block;
-    transition: background 0.2s;
-    border-radius: 4px;
-}
-
-.nav-link.router-link-exact-active,
-.nav-link.router-link-active {
-    background: #369870;
-}
-
-header h1 {
-    margin-bottom: 16px;
-    color: #333;
-}
-
-p {
-    color: #555;
-    font-size: 16px;
-}
-
-/* Estilos del formulario */
-.register-form {
-  text-align: left;
-  margin: 20px 0;
-}
-
-.form-group {
-  margin-bottom: 1.2rem;
-  position: relative;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #555;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
-}
-
-input:focus {
-  outline: none;
-  border-color: #42b983;
-}
-
-.error-input {
-  border-color: #e74c3c !important;
-}
-
-.error-text {
-  color: #e74c3c;
-  font-size: 0.8rem;
-  margin-top: 0.3rem;
-  display: block;
-}
-
-.password-requirements {
-  margin-top: 0.3rem;
-  color: #666;
-  font-size: 0.75rem;
-}
-
-.register-btn {
-  width: 100%;
-  padding: 0.8rem;
-  background: #42b983;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background 0.2s ease;
-}
-
-.register-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.register-btn:hover:not(:disabled) {
-  background: #369870;
-}
-
-.login-link {
-  text-align: center;
-  margin-top: 1.5rem;
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.login-link a {
-  color: #42b983;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
-}
-</style>

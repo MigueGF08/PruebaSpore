@@ -1,37 +1,37 @@
 <template>
-  <div class="MisCarros">
+  <div class="max-w-6xl mx-auto p-5">
     <!-- Navbar -->
-    <nav class="navbar">
-      <ul>
+    <nav class="w-full bg-emerald-500 rounded-xl mb-6">
+      <ul class="flex flex-wrap justify-center items-center list-none m-0 p-0 gap-4">
         <li v-if="isAdmin || isUser">
-          <router-link to="/principal" class="nav-link" exact>Principal</router-link>
+          <router-link to="/principal" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" exact>Principal</router-link>
         </li>
         <li v-if="isAdmin || isUser">
-          <router-link to="/mis-carros" class="nav-link">Mis Carros</router-link>
-        </li>
-        <li v-if="isAdmin">  
-          <router-link to="/agregar-carro" class="nav-link">Agregar Carros</router-link>
+          <router-link to="/mis-carros" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">Mis Carros</router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/CarrosRegistrados" class="nav-link">Carros Registrados</router-link>
+          <router-link to="/agregar-carro" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">Agregar Carros</router-link>
         </li>
         <li v-if="isAdmin">
-          <router-link to="/UsuariosRegistrados" class="nav-link">Usuarios</router-link>
+          <router-link to="/CarrosRegistrados" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">Carros Registrados</router-link>
         </li>
-         <li v-if="isUser">
-          <router-link to="/editar-usuarios-u" class="nav-link">
+        <li v-if="isAdmin">
+          <router-link to="/UsuariosRegistrados" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">Usuarios</router-link>
+        </li>
+        <li v-if="isUser">
+          <router-link to="/editar-usuarios-u" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
             MiPerfil
-          </router-link>  
-
+          </router-link>
         </li>
         <li v-if="isAdmin || isUser">
-          <router-link to="/" class="nav-link" @click="logout">Cerrar Sesión</router-link>
+          <router-link to="/" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" @click="logout">Cerrar Sesión</router-link>
         </li>
       </ul>
     </nav>
 
     <!-- Estado de conexión -->
-    <div :class="['connection-status', realTimeActive ? 'connected' : 'disconnected']">
+    <div :class="['fixed top-20 right-5 px-4 py-2 rounded-lg font-bold z-50 text-sm',
+                  realTimeActive ? 'bg-green-500 text-white shadow-lg' : 'bg-orange-500 text-white shadow-lg']">
       {{ realTimeActive ? '✅ Conectado en tiempo real' : '⚠️ Modo sin conexión en tiempo real' }}
     </div>
 
@@ -252,197 +252,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-@reference "tailwindcss";
-
-.MisCarros {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  font-family: 'Arial', sans-serif;
-}
-
-.navbar {
-  width: 100%;
-  background: #42b983;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  padding: 0;
-}
-
-.navbar ul {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-}
-
-.navbar li {
-  margin: 8px 16px;
-}
-
-.nav-link {
-  color: #fff;
-  text-decoration: none;
-  font-weight: bold;
-  padding: 12px 16px;
-  display: block;
-  transition: background 0.2s;
-  border-radius: 4px;
-}
-
-.nav-link.router-link-exact-active,
-.nav-link.router-link-active {
-  background: #369870;
-}
-
-.nav-link:hover {
-  background: #369870;
-}
-
-.connection-status {
-  position: fixed;
-  top: 70px;
-  right: 20px;
-  padding: 10px 15px;
-  border-radius: 5px;
-  font-weight: bold;
-  z-index: 1000;
-  font-size: 14px;
-}
-
-.connection-status.connected {
-  background-color: #4caf50;
-  color: white;
-  box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
-}
-
-.connection-status.disconnected {
-  background-color: #ff9800;
-  color: white;
-  box-shadow: 0 2px 10px rgba(255, 152, 0, 0.3);
-}
-
-/* NUEVO ESTILO PARA LA TARJETA DE INFORMACIÓN DEL USUARIO */
-.user-info-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e0e0;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.user-info-card h3 {
-  color: #333;
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 1.4rem;
-  text-align: center;
-  border-bottom: 2px solid #42b983;
-  padding-bottom: 10px;
-}
-
-.user-details {
-  color: #333; /* Texto en color negro */
-}
-
-.user-details p {
-  margin: 12px 0;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-.user-details strong {
-  color: #2c3e50;
-  font-weight: 600;
-}
-
-.map {
-  width: 100%;
-  height: 500px;
-  border-radius: 12px;
-  margin: 20px 0;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
-}
-
-.no-cars-message {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-.add-car-link {
-  display: inline-block;
-  margin-top: 15px;
-  padding: 12px 24px;
-  background: #42b983;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-.add-car-link:hover {
-  background: #369870;
-}
-
-.loading-indicator {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-  font-size: 1.1rem;
-}
-
-/* Estilos responsivos */
-@media (max-width: 768px) {
-  .navbar ul {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .navbar li {
-    margin: 5px 0;
-    width: 100%;
-  }
-  
-  .nav-link {
-    text-align: center;
-  }
-  
-  .user-info-card {
-    margin: 15px;
-    padding: 15px;
-  }
-  
-  .map {
-    height: 400px;
-  }
-  
-  .connection-status {
-    top: 60px;
-    right: 10px;
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-}
-
-/* Estilos para el popup del mapa */
-:deep(.car-popup) {
-  color: #333;
-  font-family: 'Arial', sans-serif;
-}
-
-:deep(.car-popup strong) {
-  color: #2c3e50;
-}
-</style>

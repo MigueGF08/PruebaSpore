@@ -1,35 +1,34 @@
 <template>
-  <div class="principal">
-    <nav class="navbar">
-      <ul>
+  <div class="max-w-7xl mx-auto my-10 p-6 border border-gray-300 rounded-lg bg-gray-50 text-center">
+    <nav class="w-full bg-emerald-500 rounded-t-xl mb-6">
+      <ul class="flex flex-wrap justify-center items-center list-none m-0 p-3 gap-4">
         <li>
-          <router-link to="/principal" class="nav-link" exact>
+          <router-link to="/principal" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" exact>
             Principal
           </router-link>
         </li>
         <li>
-          <router-link to="/mis-carros" class="nav-link">
+          <router-link to="/mis-carros" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
             Mis Carros
           </router-link>
         </li>
-        <li>  
-          <router-link to="/agregar-carro" class="nav-link">
+        <li>
+          <router-link to="/agregar-carro" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
             Agregar Carros
           </router-link>
         </li>
-       
         <li>
-          <router-link to="/CarrosRegistrados" class="nav-link">
+          <router-link to="/CarrosRegistrados" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
             Carros Registrados
           </router-link>
         </li>
         <li>
-          <router-link to="/UsuariosRegistrados" class="nav-link">
+          <router-link to="/UsuariosRegistrados" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
             Usuarios
           </router-link>
         </li>
-         <li>
-          <router-link to="/" class="nav-link" @click.native="logout">
+        <li>
+          <router-link to="/" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" @click.native="logout">
             Cerrar Sesión
           </router-link>
         </li>
@@ -37,33 +36,33 @@
     </nav>
 
     <!-- Botón para abrir modal de registro -->
-    <div class="add-user-btn-container">
-      <button @click="openRegisterModal" class="add-user-btn">
+    <div class="flex justify-center mb-6">
+      <button @click="openRegisterModal" class="bg-blue-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer py-3 px-6 transition-all duration-200 hover:bg-blue-600 hover:-translate-y-1">
         + Agregar Nuevo Usuario
       </button>
     </div>
 
     <!-- Sección de Usuarios Registrados -->
-    <section class="usuarios-registrados">
+    <section class="mb-8">
       <!-- Botón filtro: abre modal como el de editar -->
-      <button class="filter-toggle" @click="openFilterModal">🔎 Filtro</button>
-      <h2>Usuarios Registrados</h2>
+      <button class="mb-4 px-4 py-2 bg-gray-600 text-white border-none rounded-lg text-sm cursor-pointer hover:bg-gray-700 transition-colors duration-200" @click="openFilterModal">🔎 Filtro</button>
+      <h2 class="text-2xl font-bold text-cyan-400 drop-shadow-lg mb-4">Usuarios Registrados</h2>
 
       <!-- Barra de búsqueda moderna -->
-      <div class="search-bar">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
+      <div class="mb-6 w-full">
+        <div class="relative flex items-center max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-2xl p-1 transition-all duration-300 focus-within:border-emerald-500 focus-within:shadow-lg">
+          <span class="text-2xl mr-3 text-gray-500">🔍</span>
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Buscar por nombre, email, teléfono o ID..."
-            class="search-input"
+            class="flex-1 border-none outline-none p-3 text-lg text-gray-800 bg-transparent"
             @input="handleSearch"
           />
-          <button 
-            v-if="searchQuery" 
-            @click="clearSearch" 
-            class="clear-btn"
+          <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            class="bg-red-500 text-white border-none rounded-full w-7 h-7 flex items-center justify-center cursor-pointer text-sm font-bold transition-all duration-200 hover:bg-red-600 hover:scale-110 flex-shrink-0"
             title="Limpiar búsqueda"
           >
             ✕
@@ -107,61 +106,64 @@
         </div>
       </div>
 
-      <div v-else class="user-list">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="user in filteredActiveUsers"
           :key="user.id"
-          class="user-card neo-card"
+          class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col items-center transition-transform duration-200 hover:shadow-lg hover:-translate-y-1"
         >
           <!-- Imagen del usuario -->
-          <div class="user-avatar">
-            <span>👤</span>
+          <div class="w-full h-40 flex justify-center items-center bg-gray-100 text-6xl text-gray-400 border-b border-gray-200">
+            👤
           </div>
-          <div class="user-details">
-            <p><strong>ID:</strong> {{ user.id }}</p>
-            <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
-            <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
-            <p>
-              <strong>Rol:</strong> 
-              <span class="user-role" :class="'role-' + user.role.toLowerCase()">
+          <div class="p-4 w-full text-gray-800 flex-1">
+            <p class="mb-1"><strong>ID:</strong> {{ user.id }}</p>
+            <p class="mb-1"><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
+            <p class="mb-1"><strong>Email:</strong> {{ user.email }}</p>
+            <p class="mb-1"><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
+            <p class="mb-1">
+              <strong>Rol:</strong>
+              <span
+                :class="['inline-block px-2 py-1 rounded-full text-xs font-semibold capitalize',
+                        user.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800']"
+              >
                 {{ user.role }}
               </span>
             </p>
           </div>
-          <div class="user-actions">
+          <div class="flex justify-center items-center gap-3 w-full p-4 border-t border-gray-200 bg-gray-50">
             <button
               @click="openEditModal(user)"
-              class="edit-btn"
+              class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border-none rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 hover:from-emerald-600 hover:to-emerald-700 hover:-translate-y-1"
             >
-              <i class="fas fa-edit"></i> Editar
+              ✏️ Editar
             </button>
             <button
               @click="openResetPasswordModal(user)"
-              class="reset-password-btn"
+              class="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white border-none rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 hover:from-orange-600 hover:to-orange-700 hover:-translate-y-1"
             >
-              <i class="fas fa-key"></i> Rest. Pass
+              🔑 Rest. Pass
             </button>
             <button
               @click="deleteUser(user.id)"
-              class="delete-btn"
+              class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white border-none rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 hover:from-red-600 hover:to-red-700 hover:-translate-y-1"
             >
-              <i class="fas fa-trash"></i> Eliminar
+              🗑️ Eliminar
             </button>
           </div>
         </div>
-        
+
         <!-- Mensaje cuando no hay resultados -->
-        <div v-if="filteredActiveUsers.length === 0 && !loading" class="no-results">
-          <p v-if="searchQuery">No se encontraron usuarios que coincidan con "{{ searchQuery }}"</p>
-          <p v-else>No hay usuarios registrados</p>
+        <div v-if="filteredActiveUsers.length === 0 && !loading" class="col-span-full text-center py-8">
+          <p v-if="searchQuery" class="text-gray-600">No se encontraron usuarios que coincidan con "{{ searchQuery }}"</p>
+          <p v-else class="text-gray-600">No hay usuarios registrados</p>
         </div>
       </div>
       <!-- Paginado usuarios activos (desde backend) -->
-      <div class="pagination">
-        <button @click="prevActivePage" :disabled="activePage === 1" class="pagination-btn">&lt;</button>
-        <span>Página {{ activePage }} de {{ activeTotalPages }}</span>
-        <button @click="nextActivePage" :disabled="activePage === activeTotalPages" class="pagination-btn">&gt;</button>
+      <div class="flex justify-center items-center gap-4 mt-6">
+        <button @click="prevActivePage" :disabled="activePage === 1" class="bg-emerald-500 text-white border-none rounded-full px-4 py-2 text-lg cursor-pointer transition-all duration-200 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed">&lt;</button>
+        <span class="text-gray-700 font-medium">Página {{ activePage }} de {{ activeTotalPages }}</span>
+        <button @click="nextActivePage" :disabled="activePage === activeTotalPages" class="bg-emerald-500 text-white border-none rounded-full px-4 py-2 text-lg cursor-pointer transition-all duration-200 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed">&gt;</button>
       </div>
     </section>
 
@@ -183,7 +185,7 @@
           />
           <button 
             v-if="searchDeletedQuery" 
-            @click="searchDeletedQuery = ''" 
+            @click="clearDeletedSearch" 
             class="clear-btn"
             title="Limpiar búsqueda"
           >
@@ -355,27 +357,6 @@
             </button>
             <button type="submit" class="save-btn" :disabled="creatingUser">
               {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
-
-// Modal de filtro para Eliminados
-function openDeletedFilterModal() {
-  showDeletedFilterModal.value = true
-}
-function closeDeletedFilterModal() {
-  showDeletedFilterModal.value = false
-}
-function applyDeletedFilter() {
-  deletedPage.value = 1
-  fetchUsers()
-  closeDeletedFilterModal()
-}
-function clearDeletedFilter() {
-  searchDeletedQuery.value = ''
-  filterDeletedRoleUser.value = false
-  filterDeletedRoleAdmin.value = false
-  filterDeletedPhone.value = ''
-  deletedPage.value = 1
-  fetchUsers()
-}
             </button>
           </div>
         </form>
@@ -605,7 +586,10 @@ const filterDeletedPhone = ref('')
 const activeTotalPages = ref(1)
 const deletedTotalPages = ref(1)
 
-// Computed para separar usuarios activos
+// Paginación controlada por backend
+const usersPerPage = 10
+const activePage = ref(1)
+const deletedPage = ref(1)
 const activeUsers = computed(() => {
   // el backend ya retorna activos; mantenemos por compatibilidad
   return users.value.filter(user => !user.deletedAt)
@@ -643,9 +627,6 @@ const filteredDeletedUsers = computed(() => {
   })
 })
 
-// Paginación controlada por backend
-const usersPerPage = 10
-const activePage = ref(1)
 function nextActivePage() {
   if (activePage.value < activeTotalPages.value) {
     activePage.value++
@@ -659,7 +640,6 @@ function prevActivePage() {
   }
 }
 
-const deletedPage = ref(1)
 function nextDeletedPage() {
   if (deletedPage.value < deletedTotalPages.value) {
     deletedPage.value++
@@ -879,9 +859,20 @@ async function resetPassword() {
   }
 }
 
+// Función para manejar búsqueda
+function handleSearch() {
+  activePage.value = 1
+  fetchUsers()
+}
+
 // Función para limpiar búsqueda
 function clearSearch() {
   searchQuery.value = ''
+}
+
+// Función para limpiar búsqueda de eliminados
+function clearDeletedSearch() {
+  searchDeletedQuery.value = ''
 }
 
 
@@ -1074,668 +1065,3 @@ function logout() {
 // Cargar datos al montar el componente
 onMounted(fetchUsers)
 </script>
-
-<style scoped>
-.principal {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 24px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fafafa;
-  text-align: center;
-  color: #111827;
-}
-
-.navbar {
-  width: 100%;
-  background: #42b983;
-  border-radius: 6px 6px 0 0;
-  margin-bottom: 24px;
-  padding: 12px 8px; /* taller navbar */
-  min-height: 56px;
-}
-.navbar ul { list-style: none; display: flex; justify-content: center; align-items: center; gap: 0; margin: 0; padding: 0; }
-.navbar li { margin: 0 16px; }
-.nav-link { color: #fff; text-decoration: none; font-weight: bold; padding: 12px 8px; display: block; }
-.nav-link.router-link-exact-active,
-.nav-link.router-link-active { background: #369870; border-radius: 6px; }
-.navbar::after {
-  content: "";
-  display: table;
-  clear: both;
-}
-
-.user-details {
-  padding: 16px;
-  width: 100%;
-}
-
-.user-details p {
-  margin: 8px 0;
-  font-size: 14px;
-  color: #111827;
-}
-
-.user-actions {
-  display: flex;
-  width: 100%;
-  justify-content: space-around;
-  padding: 16px;
-  border-top: 1px solid #eceeef;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Buscador: fondo negro, texto blanco, pill */
-/* --------- Barra de Búsqueda Moderna ---------- */
-.search-bar {
-  margin-bottom: 24px;
-  width: 100%;
-}
-
-.search-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  max-width: 600px;
-  margin: 0 auto;
-  background: #fff;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 4px 12px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.search-input-wrapper:focus-within {
-  border-color: #42b983;
-  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.2);
-}
-
-.search-icon {
-  font-size: 20px;
-  margin-right: 10px;
-  color: #6b7280;
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 12px 8px;
-  font-size: 15px;
-  color: #111827;
-  background: transparent;
-}
-
-.search-input::placeholder {
-  color: #9ca3af;
-}
-
-.clear-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.clear-btn:hover {
-  background: #dc2626;
-  transform: scale(1.1);
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1100;
-}
-
-/* Estilo de tarjetas de usuario */
-.user-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.user-card {
-  background: #ffffff;
-  border: 1px solid #e1e5e9;
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.user-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
-
-.user-avatar {
-  width: 100%;
-  height: 160px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #f8f9fa;
-  font-size: 60px;
-  color: #6c757d;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.user-details {
-  padding: 16px;
-  width: 100%;
-  color: #111827;
-}
-
-.user-details p {
-  margin: 8px 0;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.user-role {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.role-admin {
-  background-color: #e0f2fe;
-  color: #0369a1;
-}
-
-.role-user {
-  background-color: #e0f7fa;
-  color: #00838f;
-}
-
-.user-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 16px;
-  border-top: 1px solid #e9ecef;
-  background-color: #f8f9fa;
-}
-
-/* Estilos para los botones */
-.edit-btn,
-.reset-password-btn,
-.delete-btn,
-.restore-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.edit-btn {
-  background: linear-gradient(135deg, #42b983, #2fae77);
-  color: #fff;
-}
-
-.edit-btn:hover {
-  background: linear-gradient(135deg, #3aa777, #2a9b6c);
-  transform: translateY(-2px);
-}
-
-.reset-password-btn {
-  background: linear-gradient(135deg, #f39c12, #d98a0f);
-  color: #fff;
-}
-
-.reset-password-btn:hover {
-  background: linear-gradient(135deg, #e08e0b, #c27d0a);
-  transform: translateY(-2px);
-}
-
-.delete-btn {
-  background: linear-gradient(135deg, #e74c3c, #d64232);
-  color: #fff;
-}
-
-.delete-btn:hover {
-  background: linear-gradient(135deg, #cc4435, #b83a2c);
-  transform: translateY(-2px);
-}
-
-.restore-btn {
-  background: linear-gradient(135deg, #3498db, #2b86c2);
-  color: #fff;
-  width: 100%;
-}
-
-.restore-btn:hover {
-  background: linear-gradient(135deg, #2f8ac7, #2475a8);
-  transform: translateY(-2px);
-}
-
-/* Estilo para tarjetas de usuarios eliminados */
-.user-card.deleted {
-  opacity: 0.8;
-  position: relative;
-  overflow: hidden;
-}
-
-.user-card.deleted::after {
-  content: "ELIMINADO";
-  position: absolute;
-  top: 10px;
-  right: -30px;
-  background: #e74c3c;
-  color: white;
-  padding: 3px 30px;
-  font-size: 12px;
-  font-weight: bold;
-  transform: rotate(45deg);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* Estilos para el modal de edición mejorado */
-.edit-user-modal {
-  max-width: 580px;
-  width: 90%;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.edit-user-modal .modal-header {
-  background: linear-gradient(135deg, #42b983, #2fae77);
-  color: white;
-  padding: 20px 25px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.modal-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.modal-icon {
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.edit-user-modal .modal-header h3 {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: white;
-}
-
-.user-id {
-  background: rgba(0, 0, 0, 0.15);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.85em;
-  font-weight: 500;
-  margin-left: 6px;
-}
-
-.modal-body {
-  padding: 25px;
-  background: #f8fafc;
-}
-
-.input-group {
-  margin-bottom: 20px;
-}
-
-.input-group label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #4b5563;
-}
-
-.input-icon {
-  margin-right: 8px;
-  color: #6b7280;
-  width: 18px;
-  text-align: center;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 15px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  color: #1f2937;
-  background-color: white;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.form-input:focus {
-  border-color: #42b983;
-  box-shadow: 0 0 0 3px rgba(66, 185, 131, 0.2);
-  outline: none;
-}
-
-.phone-input-container {
-  display: flex;
-  align-items: center;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.phone-prefix {
-  padding: 0 12px;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 0.9rem;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  border-right: 1px solid #e5e7eb;
-}
-
-.phone-input {
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding-left: 12px !important;
-}
-
-.select-wrapper {
-  position: relative;
-}
-
-.select-input {
-  appearance: none;
-  padding-right: 40px;
-  cursor: pointer;
-}
-
-.select-arrow {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  pointer-events: none;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.cancel-btn {
-  background: #f3f4f6;
-  color: #4b5563;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-}
-
-.cancel-btn:hover {
-  background: #e5e7eb;
-}
-
-.save-btn {
-  background: linear-gradient(135deg, #42b983, #2fae77);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.save-btn:hover {
-  background: linear-gradient(135deg, #3aa777, #2a9b6c);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-}
-
-.save-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Animaciones */
-@keyframes modalFadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.modal-content {
-  animation: modalFadeIn 0.3s ease-out;
-}
-
-/* Efectos de hover en los inputs */
-.form-input:not(:focus):hover {
-  border-color: #9ca3af;
-}
-
-/* Estilos para el estado de carga */
-.fa-spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Responsive */
-
-/* Neutral modal header (simple divider) */
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-.modal-header h3 { margin: 0; color: #333; }
-
-/* Gray circular close button */
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-.close-btn:hover { color: #333; background: #f0f0f0; }
-
-/* Form panel and controls styled like screenshot */
-.edit-form { padding: 20px; }
-.form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-.form-group { flex: 1; margin-bottom: 22px; }
-.form-group label {
-  display: block;
-  margin: 16px 0 8px 0;
-  font-weight: 700;
-  color: #374151;
-  text-align: center;
-  font-size: 18px;
-}
-.form-input {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 16px;
-  box-sizing: border-box;
-  background: #fff;
-  color: #111827;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.form-input:focus { outline: none; border-color: #42b983; box-shadow: 0 0 0 3px rgba(66,185,131,0.2); }
-.form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; padding-top: 16px; border-top: 1px solid #eee; }
-
-/* Data summary table */
-.data-summary { padding: 12px 20px 0 20px; }
-.data-summary table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
-.data-summary th, .data-summary td { text-align: left; padding: 10px 12px; font-size: 14px; }
-.data-summary th { width: 35%; color: #6b7280; background: #f9fafb; border-bottom: 1px solid #eef2f7; }
-.data-summary td { color: #111827; background: #fff; border-bottom: 1px solid #f1f5f9; }
-.data-summary tr:last-child th, .data-summary tr:last-child td { border-bottom: none; }
-
-/* Tarjeta de usuario tipo Carros (separación y bordes redondeados) */
-.modal-content {
-  background: white;
-  border-radius: 10px;
-  width: 100%;
-  max-width: 500px;
-  max-height: 95vh;
-  overflow-y: auto;
-  margin: 0 auto;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-}
-
-
-.edit-btn,
-.reset-password-btn,
-.pagination-btn {
-  background: linear-gradient(135deg, #3498db, #2b86c2);
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 9999px;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.add-user-btn:hover { background: linear-gradient(135deg, #2f8ac7, #2475a8); transform: translateY(-2px); }
-
-.delete-btn { background: #e74c3c; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; }
-.delete-btn:hover { background: #cc4435; transform: translateY(-2px); }
-
-.reset-password-btn { background: linear-gradient(135deg, #f39c12, #d98a0f); color: #fff; border: none; border-radius: 9999px; padding: 10px 20px; }
-
-/* Botones de acciones específicas */
-.restore-btn { background: linear-gradient(135deg, #3498db, #2b86c2); color: #fff; border: none; border-radius: 9999px; padding: 10px 20px; }
-.restore-btn:hover { background: linear-gradient(135deg, #2f8ac7, #2475a8); transform: translateY(-2px); }
-
-.add-user-btn-container {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0 24px 0;
-}
-.add-user-btn {
-  background: #3498db;
-  color: #fff;
-  border: none;
-  border-radius: 10px; /* rounded rectangle */
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-}
-.add-user-btn:hover { background: linear-gradient(135deg, #2f8ac7, #2475a8); transform: translateY(-2px); }
-
-@media (max-width: 768px) {
-  .navbar ul {
-    flex-direction: column;
-    align-items: center;
-  }
-  .navbar li { margin: 5px 0; width: 100%; }
-  .nav-link { text-align: center; }
-  .form-row { flex-direction: column; gap: 0; }
-  .modal-content { width: 95%; margin: 10px; }
-  .search-bar { margin: 15px 0; }
-}
-@media (max-width: 1024px) {
-  .user-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .user-list {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  
-  .user-actions {
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .edit-btn,
-  .reset-password-btn,
-  .delete-btn,
-  .restore-btn {
-    width: 100%;
-    padding: 10px;
-  }
-}
-</style>

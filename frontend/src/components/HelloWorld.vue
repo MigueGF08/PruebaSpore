@@ -54,7 +54,7 @@ async function login() {
   error.value = ''
 
   try {
-    const response = await fetch(apiUrl('/api/usuarios/login'), {
+    const response = await fetch(apiUrl('/api/  auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
