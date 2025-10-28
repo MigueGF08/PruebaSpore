@@ -23,6 +23,8 @@
   "scripts": {
     "dev": "node app.js",
     "migrate": "npx sequelize-cli db:migrate --debug",
-    "seed": "npx sequelize-cli db:seed:all --debug"
+    "migrate:undo": "npx sequelize-cli db:migrate:undo --debug",
+    "seed": "npx sequelize-cli db:seed:all --debug",
+    "seed:undo": "npx sequelize-cli db:seed:undo --debug"
   }
 }
