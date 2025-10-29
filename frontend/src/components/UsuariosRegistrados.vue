@@ -274,76 +274,89 @@
     </section>
 
     <!-- Modal de Registro -->
-    <div v-if="showRegisterModal" class="modal-overlay" @click="closeRegisterModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Registrar Nuevo Usuario</h3>
-          <button @click="closeRegisterModal" class="close-btn">&times;</button>
+    <div v-if="showRegisterModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" @click.self="closeRegisterModal">
+      <div class="relative bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-800">Agregar Nuevo Usuario</h3>
+          <button @click="closeRegisterModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
         
-        <form @submit.prevent="createNewUser" class="edit-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="firstName">Nombre:</label>
-              <input
-                id="firstName"
-                v-model="newUser.firstName"
-                type="text"
-                class="form-input"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="lastName">Apellido:</label>
-              <input
-                id="lastName"
-                v-model="newUser.lastName"
-                type="text"
-                class="form-input"
-                required
-              />
-            </div>
+        <form @submit.prevent="createNewUser" class="p-5">
+          <!-- Nombre -->
+          <div class="mb-5">
+            <label for="firstName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Nombre:</label>
+            <input
+              id="firstName"
+              v-model="newUser.firstName"
+              type="text"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+              placeholder="Ingrese el nombre"
+            />
           </div>
 
-          <div class="form-group">
-            <label for="email">Email:</label>
+          <!-- Apellido -->
+          <div class="mb-5">
+            <label for="lastName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Apellido:</label>
+            <input
+              id="lastName"
+              v-model="newUser.lastName"
+              type="text"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+              placeholder="Ingrese el apellido"
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="mb-5">
+            <label for="email" class="block mb-2 text-gray-700 font-bold text-lg text-center">Correo Electrónico:</label>
             <input
               id="email"
               v-model="newUser.email"
               type="email"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
+              placeholder="usuario@ejemplo.com"
             />
           </div>
 
-          <div class="form-group">
-            <label for="phone">Teléfono:</label>
-            <input
-              id="phone"
-              v-model="newUser.phone"
-              type="tel"
-              class="form-input"
-            />
+          <!-- Teléfono -->
+          <div class="mb-5">
+            <label for="phone" class="block mb-2 text-gray-700 font-bold text-lg text-center">Teléfono (Opcional):</label>
+            <div class="flex items-center">
+              <span class="bg-gray-100 p-3 rounded-l-lg border border-r-0 border-gray-300 text-gray-700">+57</span>
+              <input
+                id="phone"
+                v-model="newUser.phone"
+                type="tel"
+                class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="300 123 4567"
+              />
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="password">Contraseña:</label>
+          <!-- Contraseña -->
+          <div class="mb-5">
+            <label for="password" class="block mb-2 text-gray-700 font-bold text-lg text-center">Contraseña:</label>
             <input
               id="password"
               v-model="newUser.password"
               type="password"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
+              minlength="6"
+              placeholder="Mínimo 6 caracteres"
             />
           </div>
 
-          <div class="form-group">
-            <label for="role">Rol:</label>
+          <!-- Rol -->
+          <div class="mb-5">
+            <label for="role" class="block mb-2 text-gray-700 font-bold text-lg text-center">Rol:</label>
             <select
               id="role"
               v-model="newUser.role"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             >
               <option value="user">Usuario</option>
@@ -351,11 +364,22 @@
             </select>
           </div>
 
-          <div class="form-actions">
-            <button type="button" @click="closeRegisterModal" class="cancel-btn">
+          <!-- Botones de acción -->
+          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
+            <button 
+              type="button" 
+              @click="closeRegisterModal" 
+              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
+              :disabled="creatingUser"
+            >
               Cancelar
             </button>
-            <button type="submit" class="save-btn" :disabled="creatingUser">
+            <button 
+              type="submit" 
+              class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
+              :disabled="creatingUser"
+            >
+              <span v-if="creatingUser" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
               {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
             </button>
           </div>
@@ -363,126 +387,100 @@
       </div>
     </div>
 
-    <!-- Modal de Edición Mejorado -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content edit-user-modal" @click.stop>
-        <div class="modal-header">
-          <div class="modal-title">
-            <i class="fas fa-user-edit modal-icon"></i>
-            <h3>Editar Usuario <span class="user-id">#{{ editingUser.id }}</span></h3>
-          </div>
-          <button @click="closeEditModal" class="close-btn">
-            <i class="fas fa-times"></i>
-          </button>
+    <!-- Modal de Edición -->
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-auto p-4" @click.self="closeEditModal">
+      <div class="relative bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-800">Editar Usuario (ID: {{ editingUser.id }})</h3>
+          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
         
-        <div class="modal-body">
-          <form @submit.prevent="saveUserChanges" class="edit-form">
-            <div class="form-row">
-              <div class="form-group">
-                <div class="input-group">
-                  <label for="editFirstName">
-                    <i class="fas fa-user input-icon"></i>
-                    <span>Nombre</span>
-                  </label>
-                  <input
-                    id="editFirstName"
-                    v-model="editingUser.firstName"
-                    type="text"
-                    class="form-input"
-                    placeholder="Ingrese el nombre"
-                    required
-                  />
-                </div>
-              </div>
+        <form @submit.prevent="saveUserChanges" class="p-5">
+          <!-- Nombre -->
+          <div class="mb-5">
+            <label for="editFirstName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Nombre:</label>
+            <input
+              id="editFirstName"
+              v-model="editingUser.firstName"
+              type="text"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+            />
+          </div>
 
-              <div class="form-group">
-                <div class="input-group">
-                  <label for="editLastName">
-                    <i class="fas fa-user input-icon"></i>
-                    <span>Apellido</span>
-                  </label>
-                  <input
-                    id="editLastName"
-                    v-model="editingUser.lastName"
-                    type="text"
-                    class="form-input"
-                    placeholder="Ingrese el apellido"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+          <!-- Apellido -->
+          <div class="mb-5">
+            <label for="editLastName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Apellido:</label>
+            <input
+              id="editLastName"
+              v-model="editingUser.lastName"
+              type="text"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+            />
+          </div>
 
-            <div class="form-group">
-              <div class="input-group">
-                <label for="editEmail">
-                  <i class="fas fa-envelope input-icon"></i>
-                  <span>Correo Electrónico</span>
-                </label>
-                <input
-                  id="editEmail"
-                  v-model="editingUser.email"
-                  type="email"
-                  class="form-input"
-                  placeholder="usuario@ejemplo.com"
-                  required
-                />
-              </div>
-            </div>
+          <!-- Email -->
+          <div class="mb-5">
+            <label for="editEmail" class="block mb-2 text-gray-700 font-bold text-lg text-center">Correo Electrónico:</label>
+            <input
+              id="editEmail"
+              v-model="editingUser.email"
+              type="email"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+            />
+          </div>
 
-            <div class="form-group">
-              <div class="input-group">
-                <label for="editPhone">
-                  <i class="fas fa-phone input-icon"></i>
-                  <span>Teléfono</span>
-                </label>
-                <div class="phone-input-container">
-                  <span class="phone-prefix">+57</span>
-                  <input
-                    id="editPhone"
-                    v-model="editingUser.phone"
-                    type="tel"
-                    class="form-input phone-input"
-                    placeholder="300 123 4567"
-                  />
-                </div>
-              </div>
+          <!-- Teléfono -->
+          <div class="mb-5">
+            <label for="editPhone" class="block mb-2 text-gray-700 font-bold text-lg text-center">Teléfono:</label>
+            <div class="flex items-center">
+              <span class="bg-gray-100 p-3 rounded-l-lg border border-r-0 border-gray-300 text-gray-700">+57</span>
+              <input
+                id="editPhone"
+                v-model="editingUser.phone"
+                type="tel"
+                class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="300 123 4567"
+              />
             </div>
+          </div>
 
-            <div class="form-group">
-              <div class="input-group">
-                <label for="editRole">
-                  <i class="fas fa-user-tag input-icon"></i>
-                  <span>Rol del Usuario</span>
-                </label>
-                <div class="select-wrapper">
-                  <select
-                    id="editRole"
-                    v-model="editingUser.role"
-                    class="form-input select-input"
-                    required
-                  >
-                    <option value="user">Usuario</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                  <i class="fas fa-chevron-down select-arrow"></i>
-                </div>
-              </div>
-            </div>
+          <!-- Rol -->
+          <div class="mb-5">
+            <label for="editRole" class="block mb-2 text-gray-700 font-bold text-lg text-center">Rol:</label>
+            <select
+              id="editRole"
+              v-model="editingUser.role"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+            >
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
 
-            <div class="form-actions">
-              <button type="button" @click="closeEditModal" class="cancel-btn">
-                <i class="fas fa-times"></i> Cancelar
-              </button>
-              <button type="submit" class="save-btn" :disabled="saving">
-                <i v-if="!saving" class="fas fa-save"></i>
-                <i v-else class="fas fa-spinner fa-spin"></i>
-                {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
-              </button>
-            </div>
-          </form>
-        </div>
+          <!-- Botones de acción -->
+          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
+            <button 
+              type="button" 
+              @click="closeEditModal" 
+              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
+              :disabled="saving"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
+              :disabled="saving"
+            >
+              <span v-if="saving" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+              {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -524,6 +522,63 @@
             </button>
             <button type="submit" class="save-btn" :disabled="resettingPassword">
               {{ resettingPassword ? 'Restableciendo...' : 'Restablecer Contraseña' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Restablecer Contraseña -->
+    <div v-if="showResetPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" @click.self="closeResetPasswordModal">
+      <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-800">Restablecer Contraseña</h3>
+          <button @click="closeResetPasswordModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
+        </div>
+        
+        <form @submit.prevent="resetPassword" class="p-5">
+          <p class="mb-4 text-gray-700">Establecer nueva contraseña para <strong>{{ resetPasswordUser.firstName }} {{ resetPasswordUser.lastName }}</strong> ({{ resetPasswordUser.email }})</p>
+          
+          <div class="mb-5">
+            <label for="newPassword" class="block mb-2 text-gray-700 font-medium">Nueva Contraseña:</label>
+            <input
+              id="newPassword"
+              v-model="resetPasswordData.newPassword"
+              type="password"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+              minlength="6"
+            />
+          </div>
+
+          <div class="mb-5">
+            <label for="confirmPassword" class="block mb-2 text-gray-700 font-medium">Confirmar Contraseña:</label>
+            <input
+              id="confirmPassword"
+              v-model="resetPasswordData.confirmPassword"
+              type="password"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              required
+              minlength="6"
+            />
+          </div>
+
+          <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
+            <button 
+              type="button" 
+              @click="closeResetPasswordModal" 
+              class="px-6 py-2 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
+              :disabled="resettingPassword"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="px-6 py-2 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
+              :disabled="resettingPassword"
+            >
+              <span v-if="resettingPassword" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+              {{ resettingPassword ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
           </div>
         </form>
@@ -786,12 +841,21 @@ async function createNewUser() {
 
 // Función para abrir modal de restablecer contraseña
 function openResetPasswordModal(user) {
-  resetPasswordUser.value = user
+  if (!user) return;
+  
+  resetPasswordUser.value = {
+    id: user.id,
+    firstName: user.first_name || user.firstName || '',
+    lastName: user.last_name || user.lastName || '',
+    email: user.email || ''
+  };
+  
   resetPasswordData.value = {
     newPassword: '',
     confirmPassword: ''
-  }
-  showResetPasswordModal.value = true
+  };
+  
+  showResetPasswordModal.value = true;
 }
 
 // Función para cerrar modal de restablecer contraseña

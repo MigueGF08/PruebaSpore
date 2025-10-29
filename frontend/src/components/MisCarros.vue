@@ -45,20 +45,28 @@
       </div>
     </div>
 
-    <!-- Mapa -->
-    <div id="map" class="map"></div>
+    <!-- Mapa con estilos mejorados -->
+    <div id="map" class="w-full h-96 rounded-lg shadow-lg border-2 border-emerald-500 mb-6"></div>
 
     <!-- Mensaje si no hay carros -->
-    <div v-if="cars.length === 0 && !loading" class="no-cars-message">
+    <div v-if="!loading && cars.length === 0" class="text-center p-6 bg-gray-100 rounded-lg">
+      <h2 class="text-2xl font-bold mb-4">
+        {{ isAdmin ? 'Todos los Vehículos' : 'Mis Vehículos' }}
+      </h2>
       <p>No tienes carros asignados.</p>
-      <router-link to="/agregar-carro" v-if="isAdmin" class="add-car-link">
+      <router-link 
+        v-if="isAdmin" 
+        to="/agregar-carro" 
+        class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+      >
         Agregar un carro
       </router-link>
     </div>
 
-    <!-- Loading indicator -->
-    <div v-if="loading" class="loading-indicator">
-      <p>Cargando carros...</p>
+    <!-- Loading indicator mejorado -->
+    <div v-if="loading" class="text-center p-6">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500 mb-2"></div>
+      <p class="text-gray-600">Cargando carros...</p>
     </div>
   </div>
 </template>
@@ -86,12 +94,37 @@ export default {
 
     // Usuario actual y roles
     const currentUser = ref({
-      id: localStorage.getItem('userId') || '1',
-      name: localStorage.getItem('userName') || 'Usuario Ejemplo',
-      role: localStorage.getItem('userRole') || 'user'
+      id: null,
+      name: 'Invitado',
+      role: 'guest'
     })
     const isAdmin = computed(() => currentUser.value.role === 'admin')
     const isUser = computed(() => currentUser.value.role === 'user')
+    
+    // Verificar autenticación al cargar
+    onMounted(() => {
+      // Verificar si el usuario está autenticado
+      const token = localStorage.getItem('token')
+      const userId = localStorage.getItem('userId')
+      
+      if (!token || !userId) {
+        console.log('No hay token o userId, redirigiendo a login...')
+        router.push('/principal')
+        return
+      }
+      
+      // Actualizar el usuario actual con los datos del localStorage
+      currentUser.value = {
+        id: userId,
+        name: localStorage.getItem('userName') || 'Usuario',
+        role: localStorage.getItem('userRole') || 'user'
+      }
+      
+      console.log('Usuario autenticado:', currentUser.value)
+      
+      // Cargar los carros
+      fetchCars()
+    })
 
     // Socket.io (solo polling)
     const setupSocket = () => {
@@ -154,9 +187,19 @@ export default {
 
     // Funciones de mapa
     const getCarLatLng = (car) => {
-      if (car.latitude && car.longitude) return [car.latitude, car.longitude]
-      if (car.location && car.location.coordinates) return [car.location.coordinates[1], car.location.coordinates[0]]
-      return null
+      try {
+        if (car.latitude && car.longitude) {
+          return [parseFloat(car.latitude), parseFloat(car.longitude)];
+        }
+        if (car.location?.coordinates?.length === 2) {
+          return [parseFloat(car.location.coordinates[1]), parseFloat(car.location.coordinates[0])];
+        }
+        console.warn('Coordenadas no válidas para el carro:', car.id);
+        return null;
+      } catch (e) {
+        console.error('Error procesando coordenadas:', e);
+        return null;
+      }
     }
     const addCarToMap = (car) => {
       const latLng = getCarLatLng(car)
@@ -203,35 +246,112 @@ export default {
       }
     }
 
-    // Fetch carros
+    // Fetch carros - actualizado para manejar admin/user
     const fetchCars = async () => {
       try {
-        const token = localStorage.getItem('token') || 'test-token'
-        let url = apiUrl('/api/carros')
-        if (currentUser.value.role === 'user') url = apiUrl(`/api/carros/user/${currentUser.value.id}`)
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
-        if (res.status === 401) { logout(); return [] }
-        const data = await res.json()
-        return data.success ? (data.data || data.carros || []) : []
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No se encontró el token de autenticación');
+          router.push('/principal');
+          return [];
+        }
+
+        // Si es admin, obtiene todos los carros, si no, solo los del usuario
+        const isAdmin = localStorage.getItem('userRole') === 'admin';
+        const url = isAdmin 
+          ? apiUrl('/api/carros')
+          : apiUrl(`/api/carros/user/${currentUser.value.id}`);
+
+        const res = await fetch(url, { 
+          headers: { 
+            'Authorization': `Bearer ${token}`, 
+            'Content-Type': 'application/json' 
+          } 
+        });
+
+        if (res.status === 401) { 
+          logout(); 
+          return []; 
+        }
+
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        return data.success ? (data.data || data.carros || []) : [];
       } catch (err) {
-        return []
+        console.error('Error al cargar los carros:', err);
+        return [];
       }
     }
 
     // Montaje
     onMounted(async () => {
       try {
-        map = L.map('map').setView([19.4326, -99.1332], 5)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map)
-        setTimeout(() => setupSocket(), 500)
-        loading.value = true
-        const initialCars = await fetchCars()
-        cars.value = initialCars
-        initialCars.forEach(addCarToMap)
-        if (markers.value.size === 0) map.setView([19.4326, -99.1332], 10)
-        loading.value = false
+        // Inicializar el mapa
+        map = L.map('map').setView([19.4326, -99.1332], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19,
+        }).addTo(map);
+
+        // Estilos específicos para el mapa
+        const mapStyle = document.createElement('style');
+        mapStyle.type = 'text/css';
+        mapStyle.innerHTML = `
+          .map {
+            min-height: 400px;
+            z-index: 1;
+          }
+
+          /* Estilos para los popups del mapa */
+          :deep(.leaflet-popup-content) {
+            margin: 10px;
+            line-height: 1.4;
+          }
+
+          :deep(.leaflet-popup-content-wrapper) {
+            border-radius: 8px;
+            box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+          }
+
+          /* Mejoras de responsividad */
+          @media (max-width: 640px) {
+            .map {
+              height: 300px;
+            }
+          }
+        `;
+        document.head.appendChild(mapStyle);
+
+        // Configurar socket
+        setupSocket();
+
+        // Cargar carros
+        loading.value = true;
+        const initialCars = await fetchCars();
+        cars.value = initialCars;
+        
+        // Agregar marcadores
+        initialCars.forEach(car => {
+          const latLng = getCarLatLng(car);
+          if (latLng) {
+            addCarToMap(car);
+          }
+        });
+
+        // Ajustar la vista del mapa
+        if (markers.value.size > 0) {
+          const group = L.featureGroup(Array.from(markers.value.values()));
+          map.fitBounds(group.getBounds().pad(0.2));
+        } else {
+          map.setView([19.4326, -99.1332], 10);
+        }
       } catch (e) {
-        loading.value = false
+        console.error('Error al inicializar el mapa:', e);
+      } finally {
+        loading.value = false;
       }
     })
 
@@ -245,7 +365,7 @@ export default {
       localStorage.removeItem('userName')
       localStorage.removeItem('userRole')
       localStorage.removeItem('token')
-      router.push('/')
+      router.push('/principal')
     }
 
     return { currentUser, isAdmin, isUser, cars, loading, realTimeActive, logout }

@@ -1,6 +1,10 @@
 <template>
   <div class="max-w-sm mx-auto mt-10 p-6 border rounded-lg bg-gray-50 text-black">
-    <h1 class="text-2xl font-bold mb-4">Iniciar Sesión</h1>
+    <div v-if="userName" class="mb-6 text-center">
+      <h1 class="text-2xl font-bold">¡Bienvenido, {{ userName }}!</h1>
+      <p class="text-gray-600">¿Qué te gustaría hacer hoy?</p>
+    </div>
+    <h1 v-else class="text-2xl font-bold mb-4">Iniciar Sesión</h1>
     <div>
       <div class="mb-4">
         <label for="email" class="block mb-1 text-black">Correo Electrónico:</label>
@@ -48,39 +52,83 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 const router = useRouter()
+const userName = ref(localStorage.getItem('userName') || '')
 
 async function login() {
   loading.value = true
   error.value = ''
 
   try {
-    const response = await fetch(apiUrl('/api/  auth/login'), {
+    const response = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: email.value,
+        email: email.value.trim(),
         password: password.value
       })
     })
 
     const data = await response.json()
-
-    if (data.success) {
-      // ¡CORREGIDO! Guardar datos en localStorage con los nombres correctos
-      localStorage.setItem('userId', data.data.id.toString());
-      localStorage.setItem('authToken', data.data.token || data.data.id.toString());
-      localStorage.setItem('userRole', data.data.role);
-      localStorage.setItem('userName', `${data.data.firstName} ${data.data.lastName}`);
-
-      // Redirigir al dashboard o principal
-      router.push({ name: 'Principal' })
+    
+    // Mostrar la respuesta completa del servidor para depuración
+    console.log('Respuesta completa del servidor:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: data,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    
+    if (response.ok) {
+      // Extraer información del usuario de la respuesta
+      const userInfo = data.data || data;
+      
+      // Si no hay información del usuario, lanzar error
+      if (!userInfo) {
+        console.error('No se recibió información del usuario en la respuesta:', data);
+        throw new Error('Error en la autenticación: respuesta del servidor incompleta');
+      }
+      
+      // Usar el ID como token temporal si no hay token
+      // NOTA: Esto es temporal - idealmente el servidor debería devolver un token JWT
+      const token = userInfo.id ? `temp-token-${userInfo.id}` : 'no-token';
+      
+      console.log('Usuario autenticado:', userInfo);
+      const userId = userInfo.id || userInfo._id || '';
+      const userRole = userInfo.role || 'user';
+      
+      // Construir el nombre del usuario
+      let userNameValue = 'Usuario';
+      if (userInfo.firstName || userInfo.lastName) {
+        userNameValue = `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim();
+      } else if (userInfo.name) {
+        userNameValue = userInfo.name;
+      } else if (userInfo.username) {
+        userNameValue = userInfo.username;
+      } else if (userInfo.email) {
+        userNameValue = userInfo.email.split('@')[0];
+      }
+      
+      // Guardar en localStorage
+      localStorage.setItem('userId', userId.toString());
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', userRole);
+      localStorage.setItem('userName', userNameValue);
+      
+      // Actualizar el estado reactivo
+      userName.value = userNameValue;
+      
+      // Redirigir a la página principal
+      router.push({ name: 'Principal' });
     } else {
-      error.value = data.error || 'Usuario o contraseña incorrectos'
+      // Manejar error de autenticación
+      const errorMessage = data.error || data.message || 'Usuario o contraseña incorrectos';
+      throw new Error(errorMessage);
     }
   } catch (err) {
-    error.value = 'Error de conexión. Verifica que el servidor esté funcionando.'
+    console.error('Error en login:', err);
+    error.value = err.message || 'Error de conexión. Verifica que el servidor esté funcionando y las credenciales sean correctas.';
   } finally {
     loading.value = false
   }

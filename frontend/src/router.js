@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import Login from './components/Login.vue'
 import Principal from './components/Principal.vue'
 import MisCarros from './components/MisCarros.vue'
 import AgregarCarro from './components/AgregarCarro.vue'
@@ -11,7 +11,7 @@ const routes = [
   {
     path: '/',
     name: 'Login',
-    component: HelloWorld
+    component: Login
   },
   {
     path: '/editar-usuarios-u',
