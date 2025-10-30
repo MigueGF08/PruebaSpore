@@ -43,8 +43,8 @@
 
     <header>
       <h1 class="text-3xl font-extrabold text-cyan-400 drop-shadow-lg mb-4">Bienvenido a la Página Principal</h1>
-      <p class="bg-green-100 p-2 rounded inline-block m-1">Rol actual: <strong>{{ userRole }}</strong></p>
-      <p v-if="userName" class="bg-green-100 p-2 rounded inline-block m-1">Usuario: <strong>{{ userName }}</strong></p>
+      <p class="bg-green-100 p-2 rounded inline-block m-1 text-black">Rol actual: <strong class="font-bold">{{ userRole }}</strong></p>
+      <p v-if="userName" class="bg-green-100 p-2 rounded inline-block m-1 text-black">Usuario: <strong class="font-bold">{{ userName }}</strong></p>
     </header>
 
     <main v-if="hasSession">
@@ -85,11 +85,16 @@
 export default {
   name: 'PrincipalPage',
   data() {
+    // Obtener los datos del usuario desde localStorage
+    const userRole = localStorage.getItem('userRole') || 'user';
+    const userName = localStorage.getItem('userName') || '';
+    const userId = localStorage.getItem('userId') || null;
+    
     return {
-      userRole: 'user',
-      userName: '',
-      userId: null,
-      hasSession: false
+      userRole: userRole,
+      userName: userName,
+      userId: userId,
+      hasSession: !!localStorage.getItem('token')
     }
   },
   computed: {

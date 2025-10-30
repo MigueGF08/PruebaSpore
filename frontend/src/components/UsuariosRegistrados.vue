@@ -883,7 +883,7 @@ async function resetPassword() {
   resettingPassword.value = true
   try {
     // Usar el endpoint de administrador para restablecer contraseña
-    const res = await fetch(apiUrl(`/api/usuarios/${resetPasswordUser.value.id}/admin-password`), {
+    const res = await fetch(apiUrl(`/api/usuarios/${resetPasswordUser.value.id}/password`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -973,10 +973,17 @@ async function saveUserChanges() {
       role: editingUser.value.role
     }
 
-    const res = await fetch(apiUrl(`/api/usuarios/${editingUser.value.id}/admin-update`), {
+    // Asegurarse de incluir el token de autenticación
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const res = await fetch(apiUrl(`/api/usuarios/${editingUser.value.id}`), {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(updateData)
     })

@@ -617,21 +617,64 @@ exports.edit = async (req, res) => {
       return res.status(400).json({ success: false, error: 'No se proporcionaron datos para actualizar' });
     }
 
-    await car.update(updateData);
+    try {
+      // Actualizar el carro
+      await car.update(updateData);
 
-    if (req.io) {
-      const updatedCar = await Car.findByPk(id, { attributes: { exclude: ['imageData'] }, include: ['user'] });
-      const carResponse = updatedCar.toJSON();
-      req.io.to('admin-room').emit('car-updated', carResponse);
-      if (carResponse.userId) {
-        req.io.to(`user-${carResponse.userId}`).emit('car-updated', carResponse);
+      // Emitir evento de actualización si hay un socket
+      if (req.io) {
+        try {
+          const updatedCar = await Car.findByPk(id, { 
+            attributes: { exclude: ['imageData'] }, 
+            include: ['user'] 
+          });
+          
+          if (updatedCar) {
+            const carResponse = updatedCar.toJSON();
+            req.io.to('admin-room').emit('car-updated', carResponse);
+            if (carResponse.userId) {
+              req.io.to(`user-${carResponse.userId}`).emit('car-updated', carResponse);
+            }
+          }
+        } catch (socketError) {
+          console.error('Error al notificar por socket:', socketError);
+          // No fallar la operación principal por un error en el socket
+        }
       }
-    }
 
-    const updatedCar = await Car.findByPk(id, { attributes: { exclude: ['imageData'] }, include: ['user'] });
-    res.json({ success: true, message: 'Carro editado exitosamente', data: updatedCar, updated_fields: Object.keys(updateData) });
+      // Obtener el carro actualizado para la respuesta
+      const updatedCar = await Car.findByPk(id, { 
+        attributes: { exclude: ['imageData'] }, 
+        include: ['user'] 
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Carro editado exitosamente', 
+        data: updatedCar, 
+        updated_fields: Object.keys(updateData) 
+      });
+      
+    } catch (dbError) {
+      console.error('Error al actualizar en la base de datos:', dbError);
+      // Verificar si es un error de validación de Sequelize
+      if (dbError.name === 'SequelizeValidationError' || dbError.name === 'SequelizeUniqueConstraintError') {
+        const messages = dbError.errors.map(err => `${err.path}: ${err.message}`).join(', ');
+        return res.status(400).json({ 
+          success: false, 
+          error: `Error de validación: ${messages}`,
+          details: dbError.errors
+        });
+      }
+      throw dbError; // Relanzar para que lo capture el catch externo
+    }
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Error interno del servidor al editar el carro' });
+    console.error('Error en el controlador edit:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor al editar el carro',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -915,7 +958,12 @@ exports.patchDelete = async (req, res) => {
     await car.destroy();
     res.json({ success: true, message: 'Carro eliminado exitosamente' });
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Error interno del servidor al eliminar el carro' });
+    console.error('Error en patchDelete:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor al eliminar el carro',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 

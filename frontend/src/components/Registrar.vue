@@ -14,7 +14,7 @@
           v-model="user.firstName"
           required
           placeholder="Your first name"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.firstName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.firstName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.firstName" class="text-red-500 text-sm mt-1 block">{{ errors.firstName }}</span>
       </div>
@@ -28,7 +28,7 @@
           v-model="user.lastName"
           required
           placeholder="Your last name"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.lastName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.lastName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.lastName" class="text-red-500 text-sm mt-1 block">{{ errors.lastName }}</span>
       </div>
@@ -42,7 +42,7 @@
           v-model="user.email"
           required
           placeholder="your.email@example.com"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.email ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.email ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.email" class="text-red-500 text-sm mt-1 block">{{ errors.email }}</span>
       </div>
@@ -55,7 +55,7 @@
           id="phone"
           v-model="user.phone"
           placeholder="+1234567890"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.phone ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.phone ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.phone" class="text-red-500 text-sm mt-1 block">{{ errors.phone }}</span>
       </div>
@@ -69,7 +69,7 @@
           v-model="user.password"
           required
           placeholder="Min 8 characters with uppercase, lowercase, number & special"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.password ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.password ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.password" class="text-red-500 text-sm mt-1 block">{{ errors.password }}</span>
         <div class="mt-1 text-gray-600 text-xs">
@@ -86,7 +86,7 @@
           v-model="user.confirmPassword"
           required
           placeholder="Repeat your password"
-          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300', errors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
+          :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.confirmPassword" class="text-red-500 text-sm mt-1 block">{{ errors.confirmPassword }}</span>
       </div>

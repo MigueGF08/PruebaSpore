@@ -323,7 +323,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, nextTick, onUnmounted } from 'vue'
+import { ref, onMounted, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
 import { apiUrl } from '../lib/api'
@@ -464,42 +464,31 @@ function clearDeletedSearch() {
 
 // Función para verificar si un carro tiene imagen
 const hasImage = (car) => {
-  // Si ya tenemos imageData (base64 string)
   if (car.imageData) {
     return true;
   }
-
-  // Si tenemos un objeto image con data
   if (car.image && car.image.data) {
     return true;
   }
-
-  // Fallback: si tiene ID, intentar obtener desde backend
   if (car.id) {
     return true;
   }
-
   return false;
 }
 
 // Función para obtener la URL de la imagen
 const getImageUrl = (car) => {
   try {
-    // Si ya tenemos imageData (base64 string)
     if (car.imageData) {
       return `data:${car.imageType || 'image/jpeg'};base64,${car.imageData}`;
     }
     
-    // Si tenemos un objeto image con data
     if (car.image && car.image.data) {
-      // Verificar si ya es una data URL
       if (typeof car.image.data === 'string' && car.image.data.startsWith('data:')) {
         return car.image.data;
       }
       
-      // Si es un objeto Buffer o similar
       if (car.image.data && car.image.data.data) {
-        // Convertir array de bytes a base64
         const base64 = btoa(
           new Uint8Array(car.image.data.data)
             .reduce((data, byte) => data + String.fromCharCode(byte), '')
@@ -507,13 +496,11 @@ const getImageUrl = (car) => {
         return `data:${car.image.type || 'image/jpeg'};base64,${base64}`;
       }
       
-      // Si es un string base64 directo
       if (typeof car.image.data === 'string') {
         return `data:${car.image.type || 'image/jpeg'};base64,${car.image.data}`;
       }
     }
     
-    // Fallback: intentar obtener desde el backend por ID
     if (car.id) {
       return apiUrl(`/api/carros/${car.id}/imagen`);
     }
@@ -537,7 +524,6 @@ const handleImageError = (event) => {
 
 // Función para abrir modal de edición
 function openEditModal(car) {
-  // Extraer coordenadas si existen
   let latitude = null
   let longitude = null
   
@@ -561,7 +547,6 @@ function openEditModal(car) {
   
   showEditModal.value = true
   
-  // Inicializar el mapa después de que el modal se haya renderizado
   nextTick(() => {
     initMap();
   });
@@ -569,25 +554,20 @@ function openEditModal(car) {
 
 // Función para inicializar el mapa
 function initMap() {
-  // Coordenadas iniciales (usar las del carro o una ubicación por defecto)
   const initialLat = editingCar.value.latitude || 19.4326;
   const initialLng = editingCar.value.longitude || -99.1332;
   
-  // Crear el mapa
   map = L.map('edit-map').setView([initialLat, initialLng], 12);
   
-  // Añadir capa de tiles (OpenStreetMap)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
   
-  // Agregar marcador si hay coordenadas existentes
   if (editingCar.value.latitude && editingCar.value.longitude) {
     marker = L.marker([editingCar.value.latitude, editingCar.value.longitude], {
       draggable: true
     }).addTo(map);
     
-    // Evento para actualizar coordenadas al arrastrar el marcador
     marker.on('dragend', function(event) {
       const position = marker.getLatLng();
       editingCar.value.latitude = position.lat;
@@ -595,21 +575,17 @@ function initMap() {
     });
   }
   
-  // Evento para agregar/mover marcador al hacer clic en el mapa
   map.on('click', function(event) {
     const position = event.latlng;
     
-    // Actualizar coordenadas en el formulario
     editingCar.value.latitude = position.lat;
     editingCar.value.longitude = position.lng;
     
-    // Crear o mover el marcador
     if (!marker) {
       marker = L.marker(position, {
         draggable: true
       }).addTo(map);
       
-      // Evento para actualizar coordenadas al arrastrar el marcador
       marker.on('dragend', function(event) {
         const position = marker.getLatLng();
         editingCar.value.latitude = position.lat;
@@ -628,18 +604,15 @@ function updateMapFromCoords() {
   
   if (isNaN(lat) || isNaN(lng)) return;
   
-  // Actualizar la vista del mapa
   if (map) {
     map.setView([lat, lng], map.getZoom());
   }
   
-  // Crear o mover el marcador
   if (!marker) {
     marker = L.marker([lat, lng], {
       draggable: true
     }).addTo(map);
     
-    // Evento para actualizar coordenadas al arrastrar el marcador
     marker.on('dragend', function(event) {
       const position = marker.getLatLng();
       editingCar.value.latitude = position.lat;
@@ -655,7 +628,6 @@ function closeEditModal() {
   showEditModal.value = false
   editingCar.value = {}
   
-  // Limpiar el mapa
   if (map) {
     map.remove();
     map = null;
@@ -698,59 +670,122 @@ async function saveCarChanges() {
       licensePlate: editingCar.value.licensePlate,
       brand: editingCar.value.brand,
       model: editingCar.value.model,
-      color: editingCar.value.color,
-      userId: editingCar.value.userId
+      color: editingCar.value.color || '',
+      userId: parseInt(editingCar.value.userId)
     }
 
-    // Agregar ubicación si se proporciona
-    if (editingCar.value.latitude && editingCar.value.longitude) {
-      updateData.latitude = parseFloat(editingCar.value.latitude);
-      updateData.longitude = parseFloat(editingCar.value.longitude);
+    // Validar datos básicos
+    if (!updateData.licensePlate || !updateData.brand || !updateData.model) {
+      throw new Error('Por favor completa todos los campos requeridos (placa, marca, modelo)');
     }
 
-    if (editingCar.value.imageData !== null) {
-      updateData.imageData = editingCar.value.imageData
-      updateData.imageName = editingCar.value.imageName
-      updateData.imageType = editingCar.value.imageType
-      updateData.imageSize = editingCar.value.imageSize
+    if (!updateData.userId || updateData.userId < 1) {
+      throw new Error('El ID de usuario debe ser un número válido mayor a 0');
     }
 
-    const res = await fetch(apiUrl(`/api/carros/${editingCar.value.id}/edit`), {
-      method: 'PATCH',
+    // Agregar ubicación si está completa
+    if (editingCar.value.latitude !== null && 
+        editingCar.value.longitude !== null && 
+        editingCar.value.latitude !== '' && 
+        editingCar.value.longitude !== '') {
+      const lat = parseFloat(editingCar.value.latitude);
+      const lng = parseFloat(editingCar.value.longitude);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        updateData.latitude = lat;
+        updateData.longitude = lng;
+      }
+    }
+
+    // Manejo de imagen - solo si hay una nueva imagen
+    if (editingCar.value.imageData && editingCar.value.imageName) {
+      let base64Data = editingCar.value.imageData;
+      
+      // Si viene como data URL, extraer solo el base64
+      if (typeof base64Data === 'string' && base64Data.includes('base64,')) {
+        base64Data = base64Data.split('base64,')[1];
+      }
+      
+      // Enviar los campos de imagen como propiedades de nivel superior
+      updateData.image_data = base64Data;
+      updateData.image_name = editingCar.value.imageName;
+      updateData.image_type = editingCar.value.imageType || 'image/jpeg';
+      updateData.image_size = editingCar.value.imageSize || 0;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación. Por favor, inicia sesión nuevamente.');
+    }
+
+    // Mostrar datos a enviar en consola (sin incluir el base64 completo)
+    console.log('Datos a enviar:', {
+      ...updateData,
+      image_data: updateData.image_data ? `[Imagen: ${updateData.image_name || 'sin nombre'}]` : 'Sin cambios'
+    });
+
+    const res = await fetch(apiUrl(`/api/carros/${editingCar.value.id}`), {
+      method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
       },
       body: JSON.stringify(updateData)
-    })
+    });
 
-    const data = await res.json()
+    let data;
+    const contentType = res.headers.get('content-type');
     
-    if (data.success) {
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.error('Error al parsear JSON:', e);
+        const text = await res.text();
+        console.error('Respuesta del servidor:', text);
+        throw new Error('La respuesta del servidor no es válida');
+      }
+    } else {
+      const text = await res.text();
+      console.error('Respuesta no JSON del servidor:', text);
+      throw new Error('El servidor respondió con un formato incorrecto');
+    }
+
+    console.log('Respuesta del servidor:', data);
+
+    if (!res.ok) {
+      const errorMsg = data?.error || data?.message || `Error HTTP ${res.status}`;
+      console.error('Error del servidor:', errorMsg, data);
+      throw new Error(errorMsg);
+    }
+
+    if (data && data.success) {
       await Swal.fire({
         icon: 'success',
         title: '¡Éxito!',
         text: data.message || 'Carro actualizado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      closeEditModal()
-      await fetchCars()
+        confirmButtonColor: '#42b983',
+        timer: 2000
+      });
+      closeEditModal();
+      await fetchCars();
     } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: data.error || 'No se pudo actualizar el carro',
-        confirmButtonColor: '#e74c3c'
-      })
+      throw new Error(data?.error || 'No se pudo actualizar el carro');
     }
   } catch (err) {
+    console.error('Error completo al actualizar el carro:', err);
     await Swal.fire({
       icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para guardar los cambios',
+      title: 'Error al actualizar',
+      html: `
+        <p>${err.message || 'No se pudo conectar al servidor'}</p>
+        <small class="text-gray-500">Revisa la consola del navegador para más detalles</small>
+      `,
       confirmButtonColor: '#e74c3c'
-    })
+    });
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
@@ -765,43 +800,56 @@ async function deleteCar(id) {
     cancelButtonColor: '#95a5a6',
     confirmButtonText: 'Sí, eliminar',
     cancelButtonText: 'Cancelar'
-  })
+  });
   
-  if (!result.isConfirmed) return
+  if (!result.isConfirmed) return;
 
   try {
-    const res = await fetch(apiUrl(`/api/carros/${id}`), {
-      method: 'DELETE'
-    })
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No se encontró el token de autenticación');
+    }
+
+    const res = await fetch(apiUrl(`/api/carros/${id}/delete`), {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const responseData = await res.json();
     
     if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`)
+      // Si hay un error en la respuesta, mostrar el mensaje del servidor
+      const errorMsg = responseData.error || `Error al eliminar el carro: ${res.status}`;
+      throw new Error(errorMsg);
     }
     
-    const { success, error } = await res.json()
-    if (success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Eliminado!',
-        text: 'Carro eliminado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      await fetchCars()
-    } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error || 'No se pudo eliminar el carro',
-        confirmButtonColor: '#e74c3c'
-      })
+    if (!responseData.success) {
+      // Si la respuesta no fue exitosa, mostrar el mensaje de error
+      throw new Error(responseData.error || 'No se pudo eliminar el carro');
     }
-  } catch (err) {
+    
+    // Si llegamos aquí, la eliminación fue exitosa
+    await Swal.fire({
+      icon: 'success',
+      title: '¡Eliminado!',
+      text: responseData.message || 'Carro eliminado exitosamente',
+      confirmButtonColor: '#42b983'
+    });
+    
+    // Actualizar la lista de carros
+    await fetchCars();
+    
+  } catch (error) {
+    console.error('Error al eliminar el carro:', error);
     await Swal.fire({
       icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para eliminar el carro',
+      title: 'Error',
+      text: error.message || 'No se pudo eliminar el carro. Por favor, inténtalo de nuevo.',
       confirmButtonColor: '#e74c3c'
-    })
+    });
   }
 }
 
@@ -867,7 +915,8 @@ function formatDate(dateString) {
 
 // Función para cerrar sesión
 function logout() {
-  // Aquí puedes agregar lógica de logout si es necesario
+  localStorage.removeItem('token')
+  router.push('/')
 }
 
 // Cargar datos al montar el componente
