@@ -96,18 +96,33 @@ const validateUserExists = async (userId) => {
   }
 };
 
-// Validar que la placa no esté duplicada
+// Validar que la placa no esté duplicada (case insensitive y sin espacios)
 const validateLicensePlateUnique = async (licensePlate, excludeId = null) => {
   try {
-    let whereCondition = { licensePlate: licensePlate.trim(), deletedAt: null };
+    // Normalizar la placa (mayúsculas y sin espacios)
+    const normalizedPlate = licensePlate.trim().toUpperCase();
+    
+    // Buscar cualquier placa que coincida ignorando mayúsculas/minúsculas
+    const whereCondition = {
+      [Op.and]: [
+        db.sequelize.where(
+          db.sequelize.fn('UPPER', db.sequelize.col('license_plate')),
+          '=',
+          normalizedPlate
+        ),
+        { deletedAt: null }
+      ]
+    };
+
     if (excludeId) {
-      whereCondition.id = { [Op.ne]: excludeId };
+      whereCondition[Op.and].push({ id: { [Op.ne]: excludeId } });
     }
 
     const existingCar = await Car.findOne({ where: whereCondition });
     return !existingCar;
   } catch (error) {
-    return false;
+    console.error('Error validating license plate:', error);
+    return false; // En caso de error, asumir que la placa no es única para ser seguros
   }
 };
 
@@ -383,7 +398,12 @@ exports.getImage = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+// Asegurar que imagePath tenga un valor por defecto
+if (!finalCarData.imagePath) {
+  finalCarData.imagePath = ''; // O cualquier valor por defecto que prefieras
+}
 
+const car = await Car.create(finalCarData);
 // Crear carro
 exports.create = async (req, res) => {
   try {
@@ -409,14 +429,8 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Validar que la placa no esté duplicada
-    const isLicensePlateUnique = await validateLicensePlateUnique(licensePlate);
-    if (!isLicensePlateUnique) {
-      return res.status(409).json({
-        success: false,
-        error: 'License plate already exists'
-      });
-    }
+    // Normalizar la placa (mayúsculas y sin espacios)
+    const normalizedLicensePlate = licensePlate.trim().toUpperCase();
 
     // Validar imagen si se proporciona
     if (imageData !== undefined) {
@@ -524,7 +538,7 @@ exports.edit = async (req, res) => {
     if (!car) return res.status(404).json({ success: false, error: 'Carro no encontrado' });
     if (car.deletedAt) return res.status(400).json({ success: false, error: 'No se puede editar un carro eliminado' });
 
-    const { userId, licensePlate, brand, model, color, imageData, imageName, imageType, imageSize, latitude, longitude } = req.body;
+
     const updateData = {};
 
     if (userId !== undefined) {

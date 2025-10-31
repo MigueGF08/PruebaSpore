@@ -27,22 +27,25 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       comment: 'Coordinates as {lat: number, lng: number}'
     },
-    // REMOVIDO: image: DataTypes.STRING, - Esta columna no existe en la BD
-    imageData: {
-      type: DataTypes.BLOB,
-      field: 'image_data'
+    imagePath: {
+      type: DataTypes.STRING,
+      field: 'image_path',
+      comment: 'Ruta relativa al archivo de imagen en el sistema de archivos'
     },
     imageName: {
       type: DataTypes.STRING,
-      field: 'image_name'
+      field: 'image_name',
+      comment: 'Nombre original del archivo de imagen'
     },
     imageType: {
       type: DataTypes.STRING,
-      field: 'image_type'
+      field: 'image_type',
+      comment: 'Tipo MIME de la imagen (ej: image/jpeg, image/png)'
     },
     imageSize: {
       type: DataTypes.INTEGER,
-      field: 'image_size'
+      field: 'image_size',
+      comment: 'Tamaño del archivo de imagen en bytes'
     },
     userId: {
       type: DataTypes.INTEGER,
