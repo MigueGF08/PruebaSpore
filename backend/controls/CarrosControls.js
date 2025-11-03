@@ -1,5 +1,5 @@
 const db = require('../models');
-const { Car } = db;
+const { Car, sequelize } = db;
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -255,9 +255,13 @@ exports.listAllDebug = async (req, res) => {
 
 // Listar carros activos (paginado, sin imageData)
 exports.listActive = async (req, res) => {
+  console.log('listActive called with query:', req.query);
   try {
     const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
+    console.log('Pagination:', { page, limit, offset });
+    
     const q = sanitizeQueryString(req.query.q || '');
+    console.log('Search query:', q);
 
     const where = { deletedAt: null };
     if (q) {
@@ -270,31 +274,89 @@ exports.listActive = async (req, res) => {
         { userId: isNaN(Number(q)) ? -1 : Number(q) }
       ];
     }
+    console.log('Database query where clause:', JSON.stringify(where, null, 2));
 
-    const { rows, count } = await Car.findAndCountAll({
-      where,
-      attributes: { exclude: ['imageData'] },
-      include: [{
-        model: require('../models').User,
-        as: 'user',
-        attributes: ['id', 'firstName', 'lastName', 'email']
-      }],
-      limit,
-      offset,
-      order: [['createdAt', 'DESC']]
-    });
+    // Check database connection
+    try {
+      await sequelize.authenticate();
+      console.log('Database connection has been established successfully.');
+    } catch (dbError) {
+      console.error('Unable to connect to the database:', dbError);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Database connection error',
+        details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      });
+    }
 
-    res.json({
-      success: true,
-      data: rows,
-      count: rows.length,
-      page,
-      limit,
-      total: count,
-      totalPages: Math.ceil(count / limit)
-    });
+    try {
+      console.log('Available models:', Object.keys(db));
+      
+      // Check if Usuario model exists
+      if (!db.Usuario) {
+        throw new Error('Usuario model not found in database models');
+      }
+      
+      // Get the first user to test the connection
+      const testUser = await db.Usuario.findOne();
+      console.log('Test user:', testUser ? 'Found' : 'No users found');
+      
+      const result = await Car.findAndCountAll({
+        where,
+        attributes: { exclude: ['imageData'] },
+        include: [{
+          model: db.Usuario,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'email']
+        }],
+        limit,
+        offset,
+        order: [['createdAt', 'DESC']],
+        raw: false,
+        nest: true
+      });
+
+      const { rows, count } = result;
+      console.log(`Found ${rows.length} cars out of ${count} total`);
+      
+      // Manually format the response to ensure it's serializable
+      const formattedRows = rows.map(row => ({
+        ...row.get({ plain: true }),
+        user: row.user ? {
+          id: row.user.id,
+          firstName: row.user.firstName,
+          lastName: row.user.lastName,
+          email: row.user.email
+        } : null
+      }));
+      
+      res.json({
+        success: true,
+        data: formattedRows,
+        count: formattedRows.length,
+        page,
+        limit,
+        total: count,
+        totalPages: Math.ceil(count / limit)
+      });
+    } catch (queryError) {
+      console.error('Database query error details:', {
+        message: queryError.message,
+        stack: queryError.stack,
+        name: queryError.name,
+        code: queryError.original?.code,
+        sql: queryError.sql,
+        parameters: queryError.parameters
+      });
+      throw new Error(`Error al consultar la base de datos: ${queryError.message}`);
+    }
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error in listActive:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error al listar carros',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -398,12 +460,7 @@ exports.getImage = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-// Asegurar que imagePath tenga un valor por defecto
-if (!finalCarData.imagePath) {
-  finalCarData.imagePath = ''; // O cualquier valor por defecto que prefieras
-}
 
-const car = await Car.create(finalCarData);
 // Crear carro
 exports.create = async (req, res) => {
   try {

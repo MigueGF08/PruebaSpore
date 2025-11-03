@@ -1,5 +1,32 @@
 const allowedRoles = new Set(['user', 'admin']);
 
+/**
+ * Parse and validate pagination parameters
+ * @param {string|number} page - The page number
+ * @param {string|number} limit - The number of items per page
+ * @param {Object} defaults - Default values for page and limit
+ * @returns {Object} - Object containing validated page, limit, and offset
+ */
+function parsePageLimit(page, limit, defaults = { page: 1, limit: 10, maxLimit: 100 }) {
+  // Parse page number
+  let pageNum = parseInt(page, 10) || defaults.page;
+  if (pageNum < 1) pageNum = defaults.page;
+
+  // Parse limit
+  let limitNum = parseInt(limit, 10) || defaults.limit;
+  if (limitNum < 1) limitNum = 1;
+  if (limitNum > (defaults.maxLimit || 100)) limitNum = defaults.maxLimit;
+
+  // Calculate offset
+  const offset = (pageNum - 1) * limitNum;
+
+  return {
+    page: pageNum,
+    limit: limitNum,
+    offset
+  };
+}
+
 function parsePositiveInt(value, fallback = null) {
   const n = Number(value);
   if (!Number.isInteger(n) || n <= 0) return fallback;
