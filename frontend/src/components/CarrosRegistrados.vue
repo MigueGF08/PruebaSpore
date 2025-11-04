@@ -204,9 +204,11 @@
               id="licensePlate"
               v-model="editingCar.licensePlate"
               type="text"
+              maxlength="20"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 20 caracteres</small>
           </div>
 
           <div class="mb-5">
@@ -215,9 +217,11 @@
               id="brand"
               v-model="editingCar.brand"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <div class="mb-5">
@@ -226,9 +230,11 @@
               id="model"
               v-model="editingCar.model"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <div class="mb-5">
@@ -237,8 +243,10 @@
               id="color"
               v-model="editingCar.color"
               type="text"
+              maxlength="30"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 30 caracteres</small>
           </div>
 
           <!-- Campo para editar user_id -->

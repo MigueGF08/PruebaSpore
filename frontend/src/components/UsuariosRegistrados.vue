@@ -289,10 +289,12 @@
               id="firstName"
               v-model="newUser.firstName"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
               placeholder="Ingrese el nombre"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <!-- Apellido -->
@@ -302,10 +304,12 @@
               id="lastName"
               v-model="newUser.lastName"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
               placeholder="Ingrese el apellido"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <!-- Email -->
@@ -315,10 +319,12 @@
               id="email"
               v-model="newUser.email"
               type="email"
+              maxlength="100"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
               placeholder="usuario@ejemplo.com"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
           </div>
 
           <!-- Teléfono -->
@@ -330,6 +336,7 @@
                 id="phone"
                 v-model="newUser.phone"
                 type="tel"
+                maxlength="20"
                 class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
                 placeholder="300 123 4567"
               />
@@ -345,8 +352,9 @@
               type="password"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
-              minlength="6"
-              placeholder="Mínimo 6 caracteres"
+              minlength="8"
+              maxlength="100"
+              placeholder="Mínimo 8 caracteres"
             />
           </div>
 
@@ -403,9 +411,11 @@
               id="editFirstName"
               v-model="editingUser.firstName"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <!-- Apellido -->
@@ -415,9 +425,11 @@
               id="editLastName"
               v-model="editingUser.lastName"
               type="text"
+              maxlength="50"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
           </div>
 
           <!-- Email -->
@@ -427,9 +439,11 @@
               id="editEmail"
               v-model="editingUser.email"
               type="email"
+              maxlength="100"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
           </div>
 
           <!-- Teléfono -->
@@ -441,6 +455,7 @@
                 id="editPhone"
                 v-model="editingUser.phone"
                 type="tel"
+                maxlength="20"
                 class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
                 placeholder="300 123 4567"
               />

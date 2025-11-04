@@ -45,19 +45,23 @@
 
                 <div class="mb-4 text-left">
                     <label for="car-name" class="block mb-2 font-semibold text-green-700">Marca del Carro:</label>
-                    <input id="car-name" type="text" v-model="carName" required class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <input id="car-name" type="text" v-model="carName" required maxlength="50" class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <small class="text-gray-500 text-xs">Máximo 50 caracteres</small>
                 </div>
                 <div class="mb-4 text-left">
                     <label for="car-model" class="block mb-2 font-semibold text-green-700">Modelo del Carro:</label>
-                    <input id="car-model" type="text" v-model="carModel" required class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <input id="car-model" type="text" v-model="carModel" required maxlength="50" class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <small class="text-gray-500 text-xs">Máximo 50 caracteres</small>
                 </div>
                 <div class="mb-4 text-left">
                     <label for="car-plates" class="block mb-2 font-semibold text-green-700">Placas del Carro:</label>
-                    <input id="car-plates" type="text" v-model="carPlates" required class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <input id="car-plates" type="text" v-model="carPlates" required maxlength="20" class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <small class="text-gray-500 text-xs">Máximo 20 caracteres</small>
                 </div>
                 <div class="mb-4 text-left">
                     <label for="car-color" class="block mb-2 font-semibold text-green-700">Color del Carro:</label>
-                    <input id="car-color" type="text" v-model="carColor" required class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <input id="car-color" type="text" v-model="carColor" required maxlength="30" class="w-full p-2 border border-green-200 rounded text-gray-800 bg-white transition-colors duration-200 focus:border-emerald-500 focus:outline-none focus:bg-green-50" />
+                    <small class="text-gray-500 text-xs">Máximo 30 caracteres</small>
                 </div>
 
                 <!-- Selector de imagen -->

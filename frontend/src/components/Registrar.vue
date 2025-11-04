@@ -13,10 +13,12 @@
           id="firstName"
           v-model="user.firstName"
           required
+          maxlength="50"
           placeholder="Your first name"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.firstName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.firstName" class="text-red-500 text-sm mt-1 block">{{ errors.firstName }}</span>
+        <small class="text-gray-500 text-xs">Máximo 50 caracteres</small>
       </div>
 
       <!-- Last Name -->
@@ -27,10 +29,12 @@
           id="lastName"
           v-model="user.lastName"
           required
+          maxlength="50"
           placeholder="Your last name"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.lastName ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.lastName" class="text-red-500 text-sm mt-1 block">{{ errors.lastName }}</span>
+        <small class="text-gray-500 text-xs">Máximo 50 caracteres</small>
       </div>
 
       <!-- Email -->
@@ -41,10 +45,12 @@
           id="email"
           v-model="user.email"
           required
+          maxlength="100"
           placeholder="your.email@example.com"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.email ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.email" class="text-red-500 text-sm mt-1 block">{{ errors.email }}</span>
+        <small class="text-gray-500 text-xs">Máximo 100 caracteres</small>
       </div>
 
       <!-- Phone -->
@@ -54,10 +60,12 @@
           type="tel"
           id="phone"
           v-model="user.phone"
+          maxlength="20"
           placeholder="+1234567890"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.phone ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.phone" class="text-red-500 text-sm mt-1 block">{{ errors.phone }}</span>
+        <small class="text-gray-500 text-xs">Máximo 20 caracteres</small>
       </div>
 
       <!-- Password -->
@@ -68,12 +76,14 @@
           id="password"
           v-model="user.password"
           required
+          minlength="8"
+          maxlength="100"
           placeholder="Min 8 characters with uppercase, lowercase, number & special"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.password ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
         <span v-if="errors.password" class="text-red-500 text-sm mt-1 block">{{ errors.password }}</span>
         <div class="mt-1 text-gray-600 text-xs">
-          <small>Must include: uppercase, lowercase, number, special character (@$!%*?&)</small>
+          <small>Mínimo 8, máximo 100 caracteres. Debe incluir: mayúscula, minúscula, número y carácter especial (@$!%*?&)</small>
         </div>
       </div>
 
@@ -85,6 +95,8 @@
           id="confirmPassword"
           v-model="user.confirmPassword"
           required
+          minlength="8"
+          maxlength="100"
           placeholder="Repeat your password"
           :class="['w-full p-3 border-2 rounded-lg text-base box-border transition-colors duration-300 text-black', errors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-emerald-500']"
         >
