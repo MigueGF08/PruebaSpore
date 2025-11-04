@@ -29,12 +29,39 @@ module.exports = (sequelize, DataTypes) => {
     imageType: {
       type: DataTypes.STRING,
       field: 'image_type',
-      comment: 'Tipo MIME de la imagen (ej: image/jpeg, image/png)'
+      allowNull: true
     },
     imageSize: {
       type: DataTypes.INTEGER,
       field: 'image_size',
-      comment: 'Tamaño del archivo de imagen en bytes'
+      allowNull: true
+    },
+    location: {
+      type: DataTypes.GEOGRAPHY('POINT'),
+      allowNull: true,
+      get() {
+        const rawValue = this.getDataValue('location');
+        if (!rawValue) return null;
+        
+        // Si ya es un objeto con coordinates, devolverlo
+        if (rawValue.coordinates) {
+          return rawValue;
+        }
+        
+        // Si es un string en formato WKT, parsearlo
+        if (typeof rawValue === 'string') {
+          // Formato: POINT(lng lat)
+          const match = rawValue.match(/POINT\(([\d.-]+)\s+([\d.-]+)\)/);
+          if (match) {
+            return {
+              type: 'Point',
+              coordinates: [parseFloat(match[1]), parseFloat(match[2])]
+            };
+          }
+        }
+        
+        return rawValue;
+      }
     },
     userId: {
       type: DataTypes.INTEGER,

@@ -326,9 +326,18 @@ exports.listActive = async (req, res) => {
     const formattedRows = rows.map(row => {
       const carData = row.toJSON();
       
-      // Log para debug - ver formato de location
-      if (carData.location) {
-        console.log(`Carro ${carData.id} location:`, JSON.stringify(carData.location));
+      // Parsear location desde GeoJSON si existe
+      let location = null;
+      if (carData.locationGeoJSON) {
+        try {
+          location = JSON.parse(carData.locationGeoJSON);
+          console.log(`Carro ${carData.id} location parseada:`, JSON.stringify(location));
+        } catch (e) {
+          console.error(`Error parseando location del carro ${carData.id}:`, e);
+        }
+      } else if (carData.location) {
+        location = carData.location;
+        console.log(`Carro ${carData.id} location directa:`, JSON.stringify(location));
       }
       
       return {
@@ -340,7 +349,7 @@ exports.listActive = async (req, res) => {
         imageName: carData.imageName,
         imageType: carData.imageType,
         imageSize: carData.imageSize,
-        location: carData.location,
+        location: location,
         userId: carData.userId,
         createdAt: carData.createdAt,
         updatedAt: carData.updatedAt,
