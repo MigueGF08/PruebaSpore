@@ -188,16 +188,60 @@ export default {
     // Funciones de mapa
     const getCarLatLng = (car) => {
       try {
+        // Debug: ver qué formato tiene location
+        if (import.meta.env.DEV && car.location) {
+          console.log(`Carro ${car.id} location:`, car.location);
+        }
+
+        // Verificar si tiene coordenadas en formato directo
         if (car.latitude && car.longitude) {
-          return [parseFloat(car.latitude), parseFloat(car.longitude)];
+          const lat = parseFloat(car.latitude);
+          const lng = parseFloat(car.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            return [lat, lng];
+          }
         }
-        if (car.location?.coordinates?.length === 2) {
-          return [parseFloat(car.location.coordinates[1]), parseFloat(car.location.coordinates[0])];
+        
+        // Verificar si location es un objeto con coordenadas
+        if (car.location) {
+          // Formato GeoJSON: { type: 'Point', coordinates: [lng, lat] }
+          if (car.location.coordinates && Array.isArray(car.location.coordinates) && car.location.coordinates.length === 2) {
+            const lng = parseFloat(car.location.coordinates[0]);
+            const lat = parseFloat(car.location.coordinates[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              console.log(`Carro ${car.id} coordenadas: [${lat}, ${lng}]`);
+              return [lat, lng];
+            }
+          }
+          
+          // Formato alternativo: { x: lng, y: lat }
+          if (car.location.x !== undefined && car.location.y !== undefined) {
+            const lng = parseFloat(car.location.x);
+            const lat = parseFloat(car.location.y);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              console.log(`Carro ${car.id} coordenadas (x,y): [${lat}, ${lng}]`);
+              return [lat, lng];
+            }
+          }
+          
+          // Formato alternativo: { lat: lat, lng: lng }
+          if (car.location.lat !== undefined && car.location.lng !== undefined) {
+            const lat = parseFloat(car.location.lat);
+            const lng = parseFloat(car.location.lng);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              console.log(`Carro ${car.id} coordenadas (lat,lng): [${lat}, ${lng}]`);
+              return [lat, lng];
+            }
+          }
         }
-        console.warn('Coordenadas no válidas para el carro:', car.id);
+        
+        // Solo mostrar advertencia en modo desarrollo
+        if (import.meta.env.DEV) {
+          console.warn(`Carro ${car.id} (${car.brand} ${car.model}) - location:`, car.location);
+        }
         return null;
       } catch (e) {
-        console.error('Error procesando coordenadas:', e);
+        console.error('Error procesando coordenadas del carro:', car.id, e);
         return null;
       }
     }

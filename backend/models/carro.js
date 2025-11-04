@@ -21,21 +21,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    location: {
-      type: DataTypes.JSON,
-      field: 'location',
-      allowNull: true,
-      comment: 'Coordinates as {lat: number, lng: number}'
-    },
-    imagePath: {
-      type: DataTypes.STRING,
-      field: 'image_path',
-      comment: 'Ruta relativa al archivo de imagen en el sistema de archivos'
-    },
     imageName: {
       type: DataTypes.STRING,
       field: 'image_name',
-      comment: 'Nombre original del archivo de imagen'
+      allowNull: true
     },
     imageType: {
       type: DataTypes.STRING,

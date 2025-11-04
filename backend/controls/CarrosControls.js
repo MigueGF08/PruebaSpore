@@ -255,7 +255,9 @@ exports.listAllDebug = async (req, res) => {
 
 // Listar carros activos (paginado, sin imageData)
 exports.listActive = async (req, res) => {
-  console.log('listActive called with query:', req.query);
+  console.log('\n=== listActive called ===');
+  console.log('Query params:', req.query);
+  
   try {
     const { page, limit, offset } = parsePageLimit(req.query.page, req.query.limit, { page: 1, limit: 10, maxLimit: 100 });
     console.log('Pagination:', { page, limit, offset });
@@ -274,88 +276,110 @@ exports.listActive = async (req, res) => {
         { userId: isNaN(Number(q)) ? -1 : Number(q) }
       ];
     }
-    console.log('Database query where clause:', JSON.stringify(where, null, 2));
 
-    // Check database connection
-    try {
-      await sequelize.authenticate();
-      console.log('Database connection has been established successfully.');
-    } catch (dbError) {
-      console.error('Unable to connect to the database:', dbError);
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Database connection error',
-        details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
-      });
+    console.log('Available models in db:', Object.keys(db));
+    
+    // Get the User model directly from db
+    const User = db.User;
+    if (!User) {
+      console.error('User model not found!');
+      throw new Error('User model not found in database models');
     }
+    console.log('User model found:', User.name);
+    
+    // Check if Car model exists
+    if (!Car) {
+      console.error('Car model not found!');
+      throw new Error('Car model not found');
+    }
+    console.log('Car model found:', Car.name);
+    
+    // Query without include first to test
+    console.log('Attempting to query cars without include...');
+    const carsOnly = await Car.findAll({
+      where,
+      attributes: { exclude: ['imageData'] },
+      limit: 5
+    });
+    console.log(`Found ${carsOnly.length} cars without include`);
+    
+    // Now try with include
+    console.log('Attempting full query with User include...');
+    const result = await Car.findAndCountAll({
+      where,
+      attributes: { exclude: ['imageData'] },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email'],
+        required: false
+      }],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']]
+    });
 
-    try {
-      console.log('Available models:', Object.keys(db));
+    const { rows, count } = result;
+    console.log(`Successfully found ${rows.length} cars out of ${count} total`);
+    
+    // Format the response
+    const formattedRows = rows.map(row => {
+      const carData = row.toJSON();
       
-      // Check if Usuario model exists
-      if (!db.Usuario) {
-        throw new Error('Usuario model not found in database models');
+      // Log para debug - ver formato de location
+      if (carData.location) {
+        console.log(`Carro ${carData.id} location:`, JSON.stringify(carData.location));
       }
       
-      // Get the first user to test the connection
-      const testUser = await db.Usuario.findOne();
-      console.log('Test user:', testUser ? 'Found' : 'No users found');
-      
-      const result = await Car.findAndCountAll({
-        where,
-        attributes: { exclude: ['imageData'] },
-        include: [{
-          model: db.Usuario,
-          as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email']
-        }],
-        limit,
-        offset,
-        order: [['createdAt', 'DESC']],
-        raw: false,
-        nest: true
-      });
-
-      const { rows, count } = result;
-      console.log(`Found ${rows.length} cars out of ${count} total`);
-      
-      // Manually format the response to ensure it's serializable
-      const formattedRows = rows.map(row => ({
-        ...row.get({ plain: true }),
-        user: row.user ? {
-          id: row.user.id,
-          firstName: row.user.firstName,
-          lastName: row.user.lastName,
-          email: row.user.email
-        } : null
-      }));
-      
-      res.json({
-        success: true,
-        data: formattedRows,
-        count: formattedRows.length,
-        page,
-        limit,
-        total: count,
-        totalPages: Math.ceil(count / limit)
-      });
-    } catch (queryError) {
-      console.error('Database query error details:', {
-        message: queryError.message,
-        stack: queryError.stack,
-        name: queryError.name,
-        code: queryError.original?.code,
-        sql: queryError.sql,
-        parameters: queryError.parameters
-      });
-      throw new Error(`Error al consultar la base de datos: ${queryError.message}`);
-    }
+      return {
+        id: carData.id,
+        brand: carData.brand,
+        model: carData.model,
+        color: carData.color,
+        licensePlate: carData.licensePlate,
+        imageName: carData.imageName,
+        imageType: carData.imageType,
+        imageSize: carData.imageSize,
+        location: carData.location,
+        userId: carData.userId,
+        createdAt: carData.createdAt,
+        updatedAt: carData.updatedAt,
+        user: carData.user || null
+      };
+    });
+    
+    console.log('=== listActive completed successfully ===\n');
+    
+    return res.json({
+      success: true,
+      data: formattedRows,
+      count: formattedRows.length,
+      page,
+      limit,
+      total: count,
+      totalPages: Math.ceil(count / limit)
+    });
+    
   } catch (error) {
-    console.error('Error in listActive:', error);
-    res.status(500).json({ 
+    console.error('\n=== ERROR in listActive ===');
+    console.error('Error message:', error.message);
+    console.error('Error name:', error.name);
+    console.error('Error stack:', error.stack);
+    
+    if (error.original) {
+      console.error('Original error:', {
+        message: error.original.message,
+        code: error.original.code,
+        sql: error.original.sql
+      });
+    }
+    console.error('=== END ERROR ===\n');
+    
+    return res.status(500).json({ 
       success: false, 
       error: 'Error al listar carros',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
@@ -1076,32 +1100,62 @@ exports.patchRestore = async (req, res) => {
 exports.getByUser = async (req, res) => {
   try {
     const { userId } = req.params;
+    console.log('getByUser called with userId:', userId);
 
     // Validar ID del usuario
     const userIdValidation = validatePositiveInt(userId);
     if (!userIdValidation.valid) {
-      return res.status(400).json({ success: false, error: userIdValidation.error });
+      return res.status(400).json({ 
+        success: false, 
+        error: userIdValidation.error || 'ID de usuario inválido' 
+      });
     }
 
     // Validar que el usuario existe
     const userValidation = await validateUserExists(userId);
     if (!userValidation.exists) {
-      return res.status(404).json({ success: false, error: userValidation.error });
+      return res.status(404).json({ 
+        success: false, 
+        error: userValidation.error || 'Usuario no encontrado' 
+      });
+    }
+
+    console.log('Fetching cars for user ID:', userIdValidation.value);
+    
+    // Usar el modelo User correctamente
+    const User = require('../models').User || db.User;
+    if (!User) {
+      throw new Error('No se pudo cargar el modelo de Usuario');
     }
 
     const cars = await Car.findAll({
-      where: { userId: userIdValidation.value, deletedAt: null },
+      where: { 
+        userId: userIdValidation.value, 
+        deletedAt: null 
+      },
       attributes: { exclude: ['imageData'] },
       include: [{
-        model: require('../models').User,
+        model: User,
         as: 'user',
         attributes: ['id', 'firstName', 'lastName', 'email', 'role']
       }],
       order: [['createdAt', 'DESC']]
     });
-    res.json({ success: true, data: cars, count: cars.length });
+
+    console.log(`Found ${cars.length} cars for user ${userId}`);
+    return res.json({ 
+      success: true, 
+      data: cars, 
+      count: cars.length 
+    });
+    
   } catch (error) {
-    res.status(500).json({ success: false, error: 'Internal server error while getting user cars' });
+    console.error('Error in getByUser:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Error al obtener los carros del usuario',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
