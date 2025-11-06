@@ -82,7 +82,21 @@ module.exports = (sequelize, DataTypes) => {
       { fields: ['role'] },
       { fields: ['is_active'] },
       { fields: ['last_login'] }
-    ]
+    ],
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await require('bcryptjs').genSalt(10);
+          user.password = await require('bcryptjs').hash(user.password, salt);
+        }
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
+          const salt = await require('bcryptjs').genSalt(10);
+          user.password = await require('bcryptjs').hash(user.password, salt);
+        }
+      }
+    }
   });
 
   return User;

@@ -630,7 +630,8 @@ exports.registerUser = async (req, res) => {
       firstName,
       lastName,
       phone: phone || null,
-      role: role || 'user'
+      role: role || 'user',
+      isActive: true
     });
 
     res.status(201).json({
