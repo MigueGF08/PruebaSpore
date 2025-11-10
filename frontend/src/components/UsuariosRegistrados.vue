@@ -315,9 +315,10 @@
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               placeholder="3001234567"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Solo dígitos (7–20). Se elimina prefijo 57 si viene pegado.</small>
           </div>
 
-          <!-- Contraseña -->
+          <!-- Contraseña (con requisitos) -->
           <div class="mb-5">
             <label for="password" class="block mb-2 text-gray-700 font-bold text-lg text-center">Contraseña:</label>
             <input
@@ -328,8 +329,11 @@
               required
               minlength="8"
               maxlength="100"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mínimo 8, con mayúscula, número y símbolo"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">
+              Debe incluir al menos: 8 caracteres, <strong>1 mayúscula</strong>, <strong>1 número</strong> y <strong>1 carácter especial</strong> (@$!%*?&…).
+            </small>
           </div>
 
           <!-- Rol -->
@@ -394,7 +398,7 @@
               maxlength="50"
               @input="sanitizeNameField(editingUser, 'lastName')"
               @keypress="allowOnlyLetters"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duración-200 focus:border-emerald-500 focus:outline-none"
               required
             />
             <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
@@ -408,7 +412,7 @@
               v-model="editingUser.email"
               type="email"
               maxlength="100"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duración-200 focus:border-emerald-500 focus:outline-none"
               required
             />
             <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
@@ -425,7 +429,7 @@
               inputmode="numeric"
               @input="editingUser.phone = sanitizePhone(editingUser.phone)"
               @keypress="allowOnlyDigits"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duración-200 focus:border-emerald-500 focus:outline-none"
               placeholder="3001234567"
             />
           </div>
@@ -436,7 +440,7 @@
             <select
               id="editRole"
               v-model="editingUser.role"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duración-200 focus:border-emerald-500 focus:outline-none"
               required
             >
               <option value="user">Usuario</option>
@@ -498,10 +502,10 @@
             <input id="confirmPassword2" v-model="resetPasswordData.confirmPassword" type="password" class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none" required minlength="6" />
           </div>
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
-            <button type="button" @click="closeResetPasswordModal" class="px-6 py-2 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1" :disabled="resettingPassword">
+            <button type="button" @click="closeResetPasswordModal" class="px-6 py-2 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duración-300 hover:bg-gray-600 hover:-translate-y-1" :disabled="resettingPassword">
               Cancelar
             </button>
-            <button type="submit" class="px-6 py-2 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" :disabled="resettingPassword">
+            <button type="submit" class="px-6 py-2 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duración-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" :disabled="resettingPassword">
               <span v-if="resettingPassword" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
               {{ resettingPassword ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
@@ -596,7 +600,7 @@ function sanitizePhone(v) {
 }
 function isValidPhone(v) {
   const d = sanitizePhone(v)
-  return d === '' || /^\d{7,20}$/.test(d) // opcional en registro, o 7-20 dígitos si lo escriben
+  return d === '' || /^\d{7,20}$/.test(d) // opcional o 7-20 dígitos
 }
 function allowOnlyDigits(e) {
   if (!/[0-9]/.test(e.key)) e.preventDefault()
@@ -614,9 +618,13 @@ function isValidName(v) {
 function allowOnlyLetters(e) {
   if (!/[\p{L}\s]/u.test(e.key)) e.preventDefault()
 }
-// Helper para inputs con v-model de objetos reactivos
 function sanitizeNameField(obj, field) {
   obj[field] = sanitizeName(obj[field])
+}
+// Contraseña: 8+, 1 mayúscula, 1 número, 1 símbolo
+function isValidPassword(pw) {
+  const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
+  return re.test(pw || '')
 }
 
 /* ======== Paginación y fetch ======== */
@@ -670,6 +678,14 @@ async function createNewUser() {
   if (!isValidName(newUser.value.firstName)) return Swal.fire({ icon: 'error', title: 'Nombre inválido', text: 'Solo letras y espacios.' })
   if (!isValidName(newUser.value.lastName))  return Swal.fire({ icon: 'error', title: 'Apellido inválido', text: 'Solo letras y espacios.' })
   if (!isValidPhone(newUser.value.phone))    return Swal.fire({ icon: 'error', title: 'Teléfono inválido', text: 'Solo dígitos (7 a 20).' })
+  if (!isValidPassword(newUser.value.password)) {
+    return Swal.fire({
+      icon: 'error',
+      title: 'Contraseña inválida',
+      html: 'Debe tener mínimo <b>8</b> caracteres, al menos <b>1 mayúscula</b>, <b>1 número</b> y <b>1 símbolo</b>.',
+      confirmButtonColor: '#e74c3c'
+    })
+  }
 
   creatingUser.value = true
   try {
