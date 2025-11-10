@@ -28,7 +28,7 @@
           </router-link>
         </li>
         <li>
-          <router-link to="/" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" @click.native="logout">
+          <router-link to="/" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" @click.prevent="logout">
             Cerrar Sesión
           </router-link>
         </li>
@@ -44,11 +44,10 @@
 
     <!-- Sección de Usuarios Registrados -->
     <section class="mb-8">
-      <!-- Botón filtro: abre modal como el de editar -->
       <button class="mb-4 px-4 py-2 bg-gray-600 text-white border-none rounded-lg text-sm cursor-pointer hover:bg-gray-700 transition-colors duration-200" @click="openFilterModal">🔎 Filtro</button>
       <h2 class="text-2xl font-bold text-cyan-400 drop-shadow-lg mb-4">Usuarios Registrados</h2>
 
-      <!-- Barra de búsqueda moderna -->
+      <!-- Barra de búsqueda -->
       <div class="mb-6 w-full">
         <div class="relative flex items-center max-w-2xl mx-auto bg-white border-2 border-gray-300 rounded-2xl p-1 transition-all duration-300 focus-within:border-emerald-500 focus-within:shadow-lg">
           <span class="text-2xl mr-3 text-gray-500">🔍</span>
@@ -112,7 +111,6 @@
           :key="user.id"
           class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col items-center transition-transform duration-200 hover:shadow-lg hover:-translate-y-1"
         >
-          <!-- Imagen del usuario -->
           <div class="w-full h-40 flex justify-center items-center bg-gray-100 text-6xl text-gray-400 border-b border-gray-200">
             👤
           </div>
@@ -153,13 +151,13 @@
           </div>
         </div>
 
-        <!-- Mensaje cuando no hay resultados -->
         <div v-if="filteredActiveUsers.length === 0 && !loading" class="col-span-full text-center py-8">
           <p v-if="searchQuery" class="text-gray-600">No se encontraron usuarios que coincidan con "{{ searchQuery }}"</p>
           <p v-else class="text-gray-600">No hay usuarios registrados</p>
         </div>
       </div>
-      <!-- Paginado usuarios activos (desde backend) -->
+
+      <!-- Paginado activos -->
       <div class="flex justify-center items-center gap-4 mt-6">
         <button @click="prevActivePage" :disabled="activePage === 1" class="bg-emerald-500 text-white border-none rounded-full px-4 py-2 text-lg cursor-pointer transition-all duration-200 hover:bg-emerald-600 disabled:bg-gray-400 disabled:cursor-not-allowed">&lt;</button>
         <span class="text-gray-700 font-medium">Página {{ activePage }} de {{ activeTotalPages }}</span>
@@ -169,32 +167,18 @@
 
     <!-- Sección de Usuarios Eliminados -->
     <section class="usuarios-eliminados" v-if="deletedUsers.length > 0">
-      <!-- Botón filtro esquina eliminados: abre modal -->
       <button class="filter-toggle" @click="openDeletedFilterModal">🔎 Filtro</button>
       <h2>Usuarios Eliminados</h2>
-      
-      <!-- Barra de búsqueda moderna para usuarios eliminados -->
+
       <div class="search-bar">
         <div class="search-input-wrapper">
           <span class="search-icon">🔍</span>
-          <input
-            v-model="searchDeletedQuery"
-            type="text"
-            placeholder="Buscar usuarios eliminados..."
-            class="search-input"
-          />
-          <button 
-            v-if="searchDeletedQuery" 
-            @click="clearDeletedSearch" 
-            class="clear-btn"
-            title="Limpiar búsqueda"
-          >
-            ✕
-          </button>
+          <input v-model="searchDeletedQuery" type="text" placeholder="Buscar usuarios eliminados..." class="search-input" />
+          <button v-if="searchDeletedQuery" @click="clearDeletedSearch" class="clear-btn" title="Limpiar búsqueda">✕</button>
         </div>
       </div>
-      
-      <!-- Modal de Filtro (Eliminados) -->
+
+      <!-- Modal filtro eliminados -->
       <div v-if="showDeletedFilterModal" class="modal-overlay" @click="closeDeletedFilterModal">
         <div class="modal-content" @click.stop>
           <div class="modal-header">
@@ -228,44 +212,30 @@
       </div>
 
       <div class="user-list" v-else>
-        <div
-          v-for="user in filteredDeletedUsers"
-          :key="user.id"
-          class="user-card neo-card deleted"
-        >
-          <!-- Imagen del usuario -->
-          <div class="user-avatar">
-            <span>👤</span>
-          </div>
+        <div v-for="user in filteredDeletedUsers" :key="user.id" class="user-card neo-card deleted">
+          <div class="user-avatar"><span>👤</span></div>
           <div class="user-details">
             <p><strong>ID:</strong> {{ user.id }}</p>
             <p><strong>Nombre:</strong> {{ user.first_name || user.firstName }} {{ user.last_name || user.lastName }}</p>
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Teléfono:</strong> {{ user.phone || 'No proporcionado' }}</p>
             <p>
-              <strong>Rol:</strong> 
-              <span class="user-role" :class="'role-' + user.role.toLowerCase()">
-                {{ user.role }}
-              </span>
+              <strong>Rol:</strong>
+              <span class="user-role" :class="'role-' + user.role.toLowerCase()">{{ user.role }}</span>
             </p>
             <p><strong>Eliminado el:</strong> {{ formatDate(user.deletedAt) }}</p>
           </div>
           <div class="user-actions">
-            <button
-              @click="restoreUser(user.id)"
-              class="restore-btn"
-            >
-              <i class="fas fa-undo"></i> Restaurar
-            </button>
+            <button @click="restoreUser(user.id)" class="restore-btn"><i class="fas fa-undo"></i> Restaurar</button>
           </div>
         </div>
-        
-        <!-- Mensaje cuando no hay resultados -->
+
         <div v-if="filteredDeletedUsers.length === 0 && searchDeletedQuery" class="no-results">
           <p>No se encontraron usuarios eliminados que coincidan con "{{ searchDeletedQuery }}"</p>
         </div>
       </div>
-      <!-- Paginado usuarios eliminados (desde backend) -->
+
+      <!-- Paginado eliminados -->
       <div class="pagination">
         <button @click="prevDeletedPage" :disabled="deletedPage === 1" class="pagination-btn">&lt;</button>
         <span>Página {{ deletedPage }} de {{ deletedTotalPages }}</span>
@@ -280,7 +250,7 @@
           <h3 class="text-lg font-bold text-gray-800">Agregar Nuevo Usuario</h3>
           <button @click="closeRegisterModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
-        
+
         <form @submit.prevent="createNewUser" class="p-5">
           <!-- Nombre -->
           <div class="mb-5">
@@ -290,6 +260,8 @@
               v-model="newUser.firstName"
               type="text"
               maxlength="50"
+              @input="sanitizeNameField(newUser, 'firstName')"
+              @keypress="allowOnlyLetters"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
               placeholder="Ingrese el nombre"
@@ -305,6 +277,8 @@
               v-model="newUser.lastName"
               type="text"
               maxlength="50"
+              @input="sanitizeNameField(newUser, 'lastName')"
+              @keypress="allowOnlyLetters"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
               placeholder="Ingrese el apellido"
@@ -327,20 +301,20 @@
             <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
           </div>
 
-          <!-- Teléfono -->
+          <!-- Teléfono (sin +57 fijo) -->
           <div class="mb-5">
             <label for="phone" class="block mb-2 text-gray-700 font-bold text-lg text-center">Teléfono (Opcional):</label>
-            <div class="flex items-center">
-              <span class="bg-gray-100 p-3 rounded-l-lg border border-r-0 border-gray-300 text-gray-700">+57</span>
-              <input
-                id="phone"
-                v-model="newUser.phone"
-                type="tel"
-                maxlength="20"
-                class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
-                placeholder="300 123 4567"
-              />
-            </div>
+            <input
+              id="phone"
+              v-model="newUser.phone"
+              type="tel"
+              maxlength="20"
+              inputmode="numeric"
+              @input="newUser.phone = sanitizePhone(newUser.phone)"
+              @keypress="allowOnlyDigits"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              placeholder="3001234567"
+            />
           </div>
 
           <!-- Contraseña -->
@@ -372,21 +346,11 @@
             </select>
           </div>
 
-          <!-- Botones de acción -->
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
-            <button 
-              type="button" 
-              @click="closeRegisterModal" 
-              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
-              :disabled="creatingUser"
-            >
+            <button type="button" @click="closeRegisterModal" class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1" :disabled="creatingUser">
               Cancelar
             </button>
-            <button 
-              type="submit" 
-              class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
-              :disabled="creatingUser"
-            >
+            <button type="submit" class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" :disabled="creatingUser">
               <span v-if="creatingUser" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
               {{ creatingUser ? 'Creando...' : 'Crear Usuario' }}
             </button>
@@ -402,7 +366,7 @@
           <h3 class="text-lg font-bold text-gray-800">Editar Usuario (ID: {{ editingUser.id }})</h3>
           <button @click="closeEditModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
-        
+
         <form @submit.prevent="saveUserChanges" class="p-5">
           <!-- Nombre -->
           <div class="mb-5">
@@ -412,6 +376,8 @@
               v-model="editingUser.firstName"
               type="text"
               maxlength="50"
+              @input="sanitizeNameField(editingUser, 'firstName')"
+              @keypress="allowOnlyLetters"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
@@ -426,6 +392,8 @@
               v-model="editingUser.lastName"
               type="text"
               maxlength="50"
+              @input="sanitizeNameField(editingUser, 'lastName')"
+              @keypress="allowOnlyLetters"
               class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
@@ -446,20 +414,20 @@
             <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
           </div>
 
-          <!-- Teléfono -->
+          <!-- Teléfono (sin +57) -->
           <div class="mb-5">
             <label for="editPhone" class="block mb-2 text-gray-700 font-bold text-lg text-center">Teléfono:</label>
-            <div class="flex items-center">
-              <span class="bg-gray-100 p-3 rounded-l-lg border border-r-0 border-gray-300 text-gray-700">+57</span>
-              <input
-                id="editPhone"
-                v-model="editingUser.phone"
-                type="tel"
-                maxlength="20"
-                class="flex-1 p-3 border border-l-0 border-gray-300 rounded-r-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
-                placeholder="300 123 4567"
-              />
-            </div>
+            <input
+              id="editPhone"
+              v-model="editingUser.phone"
+              type="tel"
+              maxlength="20"
+              inputmode="numeric"
+              @input="editingUser.phone = sanitizePhone(editingUser.phone)"
+              @keypress="allowOnlyDigits"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              placeholder="3001234567"
+            />
           </div>
 
           <!-- Rol -->
@@ -476,21 +444,11 @@
             </select>
           </div>
 
-          <!-- Botones de acción -->
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
-            <button 
-              type="button" 
-              @click="closeEditModal" 
-              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
-              :disabled="saving"
-            >
+            <button type="button" @click="closeEditModal" class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1" :disabled="saving">
               Cancelar
             </button>
-            <button 
-              type="submit" 
-              class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
-              :disabled="saving"
-            >
+            <button type="submit" class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" :disabled="saving">
               <span v-if="saving" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
               {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
@@ -499,99 +457,51 @@
       </div>
     </div>
 
-    <!-- Modal de Restablecer Contraseña -->
+    <!-- Modal de Restablecer Contraseña (dos variantes conservadas de tu código) -->
     <div v-if="showResetPasswordModal" class="modal-overlay" @click="closeResetPasswordModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>Restablecer Contraseña (Usuario: {{ resetPasswordUser.first_name || resetPasswordUser.firstName }} {{ resetPasswordUser.last_name || resetPasswordUser.lastName }})</h3>
           <button @click="closeResetPasswordModal" class="close-btn">&times;</button>
         </div>
-        
         <form @submit.prevent="resetPassword" class="edit-form">
           <div class="form-group">
             <label for="newPassword">Nueva Contraseña:</label>
-            <input
-              id="newPassword"
-              v-model="resetPasswordData.newPassword"
-              type="password"
-              class="form-input"
-              required
-              placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
-            />
+            <input id="newPassword" v-model="resetPasswordData.newPassword" type="password" class="form-input" required placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial" />
           </div>
-
           <div class="form-group">
             <label for="confirmPassword">Confirmar Contraseña:</label>
-            <input
-              id="confirmPassword"
-              v-model="resetPasswordData.confirmPassword"
-              type="password"
-              class="form-input"
-              required
-            />
+            <input id="confirmPassword" v-model="resetPasswordData.confirmPassword" type="password" class="form-input" required />
           </div>
-
           <div class="form-actions">
-            <button type="button" @click="closeResetPasswordModal" class="cancel-btn">
-              Cancelar
-            </button>
-            <button type="submit" class="save-btn" :disabled="resettingPassword">
-              {{ resettingPassword ? 'Restableciendo...' : 'Restablecer Contraseña' }}
-            </button>
+            <button type="button" @click="closeResetPasswordModal" class="cancel-btn">Cancelar</button>
+            <button type="submit" class="save-btn" :disabled="resettingPassword">{{ resettingPassword ? 'Restableciendo...' : 'Restablecer Contraseña' }}</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Modal de Restablecer Contraseña -->
     <div v-if="showResetPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" @click.self="closeResetPasswordModal">
       <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
         <div class="flex justify-between items-center p-5 border-b border-gray-200">
           <h3 class="text-lg font-bold text-gray-800">Restablecer Contraseña</h3>
           <button @click="closeResetPasswordModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
-        
         <form @submit.prevent="resetPassword" class="p-5">
           <p class="mb-4 text-gray-700">Establecer nueva contraseña para <strong>{{ resetPasswordUser.firstName }} {{ resetPasswordUser.lastName }}</strong> ({{ resetPasswordUser.email }})</p>
-          
           <div class="mb-5">
-            <label for="newPassword" class="block mb-2 text-gray-700 font-medium">Nueva Contraseña:</label>
-            <input
-              id="newPassword"
-              v-model="resetPasswordData.newPassword"
-              type="password"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
-              required
-              minlength="6"
-            />
+            <label for="newPassword2" class="block mb-2 text-gray-700 font-medium">Nueva Contraseña:</label>
+            <input id="newPassword2" v-model="resetPasswordData.newPassword" type="password" class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none" required minlength="6" />
           </div>
-
           <div class="mb-5">
-            <label for="confirmPassword" class="block mb-2 text-gray-700 font-medium">Confirmar Contraseña:</label>
-            <input
-              id="confirmPassword"
-              v-model="resetPasswordData.confirmPassword"
-              type="password"
-              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
-              required
-              minlength="6"
-            />
+            <label for="confirmPassword2" class="block mb-2 text-gray-700 font-medium">Confirmar Contraseña:</label>
+            <input id="confirmPassword2" v-model="resetPasswordData.confirmPassword" type="password" class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none" required minlength="6" />
           </div>
-
           <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
-            <button 
-              type="button" 
-              @click="closeResetPasswordModal" 
-              class="px-6 py-2 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
-              :disabled="resettingPassword"
-            >
+            <button type="button" @click="closeResetPasswordModal" class="px-6 py-2 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1" :disabled="resettingPassword">
               Cancelar
             </button>
-            <button 
-              type="submit" 
-              class="px-6 py-2 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" 
-              :disabled="resettingPassword"
-            >
+            <button type="submit" class="px-6 py-2 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed" :disabled="resettingPassword">
               <span v-if="resettingPassword" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
               {{ resettingPassword ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
@@ -614,33 +524,23 @@ const loading = ref(false)
 const errorMessage = ref('')
 const router = useRouter()
 
-// Estados para nuevo usuario
-const newUser = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: '',
-  password: '',
-  role: 'user'
-})
+// Nuevo usuario
+const newUser = ref({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'user' })
 const creatingUser = ref(false)
 const showRegisterModal = ref(false)
 
-// Estados del modal de edición
+// Edición
 const showEditModal = ref(false)
 const editingUser = ref({})
 const saving = ref(false)
 
-// Estados para restablecer contraseña
+// Reset pass
 const showResetPasswordModal = ref(false)
 const resetPasswordUser = ref({})
-const resetPasswordData = ref({
-  newPassword: '',
-  confirmPassword: ''
-})
+const resetPasswordData = ref({ newPassword: '', confirmPassword: '' })
 const resettingPassword = ref(false)
 
-// Estados para búsqueda
+// Filtros/búsqueda/paginación
 const searchQuery = ref('')
 const searchDeletedQuery = ref('')
 const showFilterModal = ref(false)
@@ -651,503 +551,236 @@ const showDeletedFilterModal = ref(false)
 const filterDeletedRoleUser = ref(false)
 const filterDeletedRoleAdmin = ref(false)
 const filterDeletedPhone = ref('')
-
-// Total de páginas (desde backend)
 const activeTotalPages = ref(1)
 const deletedTotalPages = ref(1)
-
-// Paginación controlada por backend
 const usersPerPage = 10
 const activePage = ref(1)
 const deletedPage = ref(1)
-const activeUsers = computed(() => {
-  // el backend ya retorna activos; mantenemos por compatibilidad
-  return users.value.filter(user => !user.deletedAt)
-})
 
-// Computed para filtrar usuarios activos según búsqueda
+const activeUsers = computed(() => users.value.filter(u => !u.deletedAt))
+
 const filteredActiveUsers = computed(() => {
   if (!searchQuery.value) return activeUsers.value
-  
-  const query = searchQuery.value.toLowerCase()
+  const q = searchQuery.value.toLowerCase()
   return activeUsers.value.filter(user => {
-    const userName = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase();
+    const name = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase()
     return (
-      (userName && userName.includes(query)) ||
-      (user.email && user.email.toLowerCase().includes(query)) ||
-      (user.phone && user.phone && user.phone.toLowerCase().includes(query)) ||
-      (user.id && user.id.toString().includes(query))
+      name.includes(q) ||
+      (user.email || '').toLowerCase().includes(q) ||
+      (user.phone || '').toString().toLowerCase().includes(q) ||
+      (user.id && user.id.toString().includes(q))
     )
   })
 })
-
-// Computed para filtrar usuarios eliminados según búsqueda
 const filteredDeletedUsers = computed(() => {
   if (!searchDeletedQuery.value) return deletedUsers.value
-  
-  const query = searchDeletedQuery.value.toLowerCase()
+  const q = searchDeletedQuery.value.toLowerCase()
   return deletedUsers.value.filter(user => {
-    const userName = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase();
+    const name = `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.toLowerCase()
     return (
-      (userName && userName.includes(query)) ||
-      (user.email && user.email.toLowerCase().includes(query)) ||
-      (user.phone && user.phone && user.phone.toLowerCase().includes(query)) ||
-      (user.id && user.id.toString().includes(query))
+      name.includes(q) ||
+      (user.email || '').toLowerCase().includes(q) ||
+      (user.phone || '').toString().toLowerCase().includes(q) ||
+      (user.id && user.id.toString().includes(q))
     )
   })
 })
 
-function nextActivePage() {
-  if (activePage.value < activeTotalPages.value) {
-    activePage.value++
-    fetchUsers()
-  }
+/* ======== Validación / Sanitizado ======== */
+// Teléfono: deja solo dígitos y elimina 57 al inicio si lo pegaban con prefijo.
+function sanitizePhone(v) {
+  if (!v) return ''
+  let d = String(v).replace(/\D/g, '')
+  d = d.replace(/^57/, '')
+  return d
 }
-function prevActivePage() {
-  if (activePage.value > 1) {
-    activePage.value--
-    fetchUsers()
-  }
+function isValidPhone(v) {
+  const d = sanitizePhone(v)
+  return d === '' || /^\d{7,20}$/.test(d) // opcional en registro, o 7-20 dígitos si lo escriben
+}
+function allowOnlyDigits(e) {
+  if (!/[0-9]/.test(e.key)) e.preventDefault()
+}
+// Nombres: solo letras Unicode y espacios
+function sanitizeName(value) {
+  let v = value || ''
+  v = v.replace(/[^\p{L}\s]/gu, '')
+  v = v.replace(/\s+/g, ' ').trim()
+  return v
+}
+function isValidName(v) {
+  return /^[\p{L}]+(?:[\s\p{L}]+)*$/u.test(v || '')
+}
+function allowOnlyLetters(e) {
+  if (!/[\p{L}\s]/u.test(e.key)) e.preventDefault()
+}
+// Helper para inputs con v-model de objetos reactivos
+function sanitizeNameField(obj, field) {
+  obj[field] = sanitizeName(obj[field])
 }
 
-function nextDeletedPage() {
-  if (deletedPage.value < deletedTotalPages.value) {
-    deletedPage.value++
-    fetchUsers()
-  }
-}
-function prevDeletedPage() {
-  if (deletedPage.value > 1) {
-    deletedPage.value--
-    fetchUsers()
-  }
-}
+/* ======== Paginación y fetch ======== */
+function nextActivePage() { if (activePage.value < activeTotalPages.value) { activePage.value++; fetchUsers() } }
+function prevActivePage() { if (activePage.value > 1) { activePage.value--; fetchUsers() } }
+function nextDeletedPage() { if (deletedPage.value < deletedTotalPages.value) { deletedPage.value++; fetchUsers() } }
+function prevDeletedPage() { if (deletedPage.value > 1) { deletedPage.value--; fetchUsers() } }
 
-// Función para obtener usuarios (paginado backend)
 async function fetchUsers() {
   loading.value = true
   errorMessage.value = ''
   try {
-    // Obtener usuarios activos (con page/limit)
-    // Construir query con filtros
-    const roleParts = []
-    if (filterRoleUser.value) roleParts.push('user')
-    if (filterRoleAdmin.value) roleParts.push('admin')
-    const roleQS = roleParts.length ? `&role=${encodeURIComponent(roleParts.join(','))}` : ''
+    const roles = []
+    if (filterRoleUser.value) roles.push('user')
+    if (filterRoleAdmin.value) roles.push('admin')
+    const roleQS = roles.length ? `&role=${encodeURIComponent(roles.join(','))}` : ''
     const phoneQS = filterPhone.value ? `&phone=${encodeURIComponent(filterPhone.value)}` : ''
     const qQS = searchQuery.value ? `&q=${encodeURIComponent(searchQuery.value)}` : ''
-
     const activeUrl = apiUrl(`/api/usuarios?page=${activePage.value}&limit=${usersPerPage}${qQS}${roleQS}${phoneQS}`)
     const activeRes = await fetch(activeUrl)
-
     if (!activeRes.ok) throw new Error('Error al obtener usuarios activos')
-
     const activeData = await activeRes.json()
 
-    // Obtener usuarios eliminados (con page/limit y filtros)
-    const delRoleParts = []
-    if (filterDeletedRoleUser.value) delRoleParts.push('user')
-    if (filterDeletedRoleAdmin.value) delRoleParts.push('admin')
-    const delRoleQS = delRoleParts.length ? `&role=${encodeURIComponent(delRoleParts.join(','))}` : ''
-    const delPhoneQS = filterDeletedPhone.value ? `&phone=${encodeURIComponent(filterDeletedPhone.value)}` : ''
-    const delQQS = searchDeletedQuery.value ? `&q=${encodeURIComponent(searchDeletedQuery.value)}` : ''
-    const deletedUrl = apiUrl(`/api/usuarios/deleted?page=${deletedPage.value}&limit=${usersPerPage}${delQQS}${delRoleQS}${delPhoneQS}`)
+    const dRoles = []
+    if (filterDeletedRoleUser.value) dRoles.push('user')
+    if (filterDeletedRoleAdmin.value) dRoles.push('admin')
+    const dRoleQS = dRoles.length ? `&role=${encodeURIComponent(dRoles.join(','))}` : ''
+    const dPhoneQS = filterDeletedPhone.value ? `&phone=${encodeURIComponent(filterDeletedPhone.value)}` : ''
+    const dQQS = searchDeletedQuery.value ? `&q=${encodeURIComponent(searchDeletedQuery.value)}` : ''
+    const deletedUrl = apiUrl(`/api/usuarios/deleted?page=${deletedPage.value}&limit=${usersPerPage}${dQQS}${dRoleQS}${dPhoneQS}`)
     const deletedRes = await fetch(deletedUrl)
-
     if (!deletedRes.ok) throw new Error('Error al obtener usuarios eliminados')
-
     const deletedData = await deletedRes.json()
 
-    if (activeData.success) {
-      users.value = activeData.data
-      activeTotalPages.value = activeData.totalPages || 1
-    } else {
-      errorMessage.value = activeData.error || 'No se pudieron cargar los usuarios activos'
-    }
+    if (activeData.success) { users.value = activeData.data; activeTotalPages.value = activeData.totalPages || 1 }
+    else { errorMessage.value = activeData.error || 'No se pudieron cargar los usuarios activos' }
 
-    if (deletedData.success) {
-      deletedUsers.value = deletedData.data
-      deletedTotalPages.value = deletedData.totalPages || 1
-    }
-
-    // No reiniciar páginas para permitir navegar
-  } catch (err) {
+    if (deletedData.success) { deletedUsers.value = deletedData.data; deletedTotalPages.value = deletedData.totalPages || 1 }
+  } catch {
     errorMessage.value = 'Error de conexión al obtener usuarios'
-  } finally {
-    loading.value = false
-  }
+  } finally { loading.value = false }
 }
 
-// Función para abrir modal de registro
-function openRegisterModal() {
-  resetNewUserForm()
-  showRegisterModal.value = true
-}
+/* ======== Registro ======== */
+function openRegisterModal() { resetNewUserForm(); showRegisterModal.value = true }
+function closeRegisterModal() { showRegisterModal.value = false; resetNewUserForm() }
+function resetNewUserForm() { newUser.value = { firstName: '', lastName: '', email: '', phone: '', password: '', role: 'user' } }
 
-// Función para cerrar modal de registro
-function closeRegisterModal() {
-  showRegisterModal.value = false
-  resetNewUserForm()
-}
-
-// Función para resetear el formulario de nuevo usuario
-function resetNewUserForm() {
-  newUser.value = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    role: 'user'
-  }
-}
-
-// Función para crear un nuevo usuario
 async function createNewUser() {
+  // Validaciones front
+  if (!isValidName(newUser.value.firstName)) return Swal.fire({ icon: 'error', title: 'Nombre inválido', text: 'Solo letras y espacios.' })
+  if (!isValidName(newUser.value.lastName))  return Swal.fire({ icon: 'error', title: 'Apellido inválido', text: 'Solo letras y espacios.' })
+  if (!isValidPhone(newUser.value.phone))    return Swal.fire({ icon: 'error', title: 'Teléfono inválido', text: 'Solo dígitos (7 a 20).' })
+
   creatingUser.value = true
   try {
     const userData = {
-      firstName: newUser.value.firstName,
-      lastName: newUser.value.lastName,
+      firstName: sanitizeName(newUser.value.firstName),
+      lastName: sanitizeName(newUser.value.lastName),
       email: newUser.value.email,
-      phone: newUser.value.phone,
+      phone: sanitizePhone(newUser.value.phone),
       password: newUser.value.password,
       role: newUser.value.role
     }
-
     const res = await fetch(apiUrl('/api/usuarios/register'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
     })
-
     const responseData = await res.json()
-    
     if (responseData.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: responseData.message || 'Usuario creado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      closeRegisterModal()
-      await fetchUsers()
+      await Swal.fire({ icon: 'success', title: '¡Éxito!', text: responseData.message || 'Usuario creado exitosamente', confirmButtonColor: '#42b983' })
+      closeRegisterModal(); await fetchUsers()
     } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: responseData.error || 'No se pudo crear el usuario',
-        confirmButtonColor: '#e74c3c'
-      })
+      await Swal.fire({ icon: 'error', title: 'Error', text: responseData.error || 'No se pudo crear el usuario' })
     }
-  } catch (err) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para crear el usuario',
-      confirmButtonColor: '#e74c3c'
-    })
-  } finally {
-    creatingUser.value = false
-  }
+  } catch {
+    await Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar al servidor para crear el usuario' })
+  } finally { creatingUser.value = false }
 }
 
-// Función para abrir modal de restablecer contraseña
-function openResetPasswordModal(user) {
-  if (!user) return;
-  
-  resetPasswordUser.value = {
-    id: user.id,
-    firstName: user.first_name || user.firstName || '',
-    lastName: user.last_name || user.lastName || '',
-    email: user.email || ''
-  };
-  
-  resetPasswordData.value = {
-    newPassword: '',
-    confirmPassword: ''
-  };
-  
-  showResetPasswordModal.value = true;
-}
-
-// Función para cerrar modal de restablecer contraseña
-function closeResetPasswordModal() {
-  showResetPasswordModal.value = false
-  resetPasswordUser.value = {}
-  resetPasswordData.value = {
-    newPassword: '',
-    confirmPassword: ''
-  }
-}
-
-// Función para restablecer contraseña
-async function resetPassword() {
-  if (resetPasswordData.value.newPassword !== resetPasswordData.value.confirmPassword) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Las contraseñas no coinciden',
-      confirmButtonColor: '#e74c3c'
-    })
-    return
-  }
-
-  resettingPassword.value = true
-  try {
-    // Usar el endpoint de administrador para restablecer contraseña
-    const res = await fetch(apiUrl(`/api/usuarios/${resetPasswordUser.value.id}/password`), {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        newPassword: resetPasswordData.value.newPassword
-      })
-    })
-
-    const responseData = await res.json()
-    
-    if (responseData.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: responseData.message || 'Contraseña restablecida exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      closeResetPasswordModal()
-    } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: responseData.error || 'No se pudo restablecer la contraseña',
-        confirmButtonColor: '#e74c3c'
-      })
-    }
-  } catch (err) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para restablecer la contraseña',
-      confirmButtonColor: '#e74c3c'
-    })
-  } finally {
-    resettingPassword.value = false
-  }
-}
-
-// Función para manejar búsqueda
-function handleSearch() {
-  activePage.value = 1
-  fetchUsers()
-}
-
-// Función para limpiar búsqueda
-function clearSearch() {
-  searchQuery.value = ''
-}
-
-// Función para limpiar búsqueda de eliminados
-function clearDeletedSearch() {
-  searchDeletedQuery.value = ''
-}
-
-
-// Función para abrir modal de edición
+/* ======== Edición ======== */
 function openEditModal(user) {
-  // Asegurarnos de que estamos usando los nombres correctos
   editingUser.value = {
     id: user.id,
-    firstName: user.first_name || user.firstName,
-    lastName: user.last_name || user.lastName,
-    email: user.email,
-    phone: user.phone || '',
+    firstName: sanitizeName(user.first_name || user.firstName || ''),
+    lastName: sanitizeName(user.last_name || user.lastName || ''),
+    email: user.email || '',
+    phone: sanitizePhone(user.phone || ''),
     role: user.role
   }
-  
   showEditModal.value = true
 }
+function closeEditModal() { showEditModal.value = false; editingUser.value = {} }
 
-// Función para cerrar modal de edición
-function closeEditModal() {
-  showEditModal.value = false
-  editingUser.value = {}
-}
-
-// Función para guardar cambios
 async function saveUserChanges() {
+  // Validaciones front
+  if (!isValidName(editingUser.value.firstName)) return Swal.fire({ icon: 'error', title: 'Nombre inválido', text: 'Solo letras y espacios.' })
+  if (!isValidName(editingUser.value.lastName))  return Swal.fire({ icon: 'error', title: 'Apellido inválido', text: 'Solo letras y espacios.' })
+  if (!isValidPhone(editingUser.value.phone))    return Swal.fire({ icon: 'error', title: 'Teléfono inválido', text: 'Solo dígitos (7 a 20).' })
+
   saving.value = true
   try {
     const updateData = {
-      firstName: editingUser.value.firstName,
-      lastName: editingUser.value.lastName,
+      firstName: sanitizeName(editingUser.value.firstName),
+      lastName: sanitizeName(editingUser.value.lastName),
       email: editingUser.value.email,
-      phone: editingUser.value.phone,
+      phone: sanitizePhone(editingUser.value.phone),
       role: editingUser.value.role
     }
-
-    // Asegurarse de incluir el token de autenticación
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No se encontró el token de autenticación');
-    }
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No se encontró el token de autenticación')
 
     const res = await fetch(apiUrl(`/api/usuarios/${editingUser.value.id}`), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(updateData)
     })
-
     const responseData = await res.json()
-    
     if (responseData.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Éxito!',
-        text: responseData.message || 'Usuario actualizado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      closeEditModal()
-      await fetchUsers()
+      await Swal.fire({ icon: 'success', title: '¡Éxito!', text: responseData.message || 'Usuario actualizado exitosamente', confirmButtonColor: '#42b983' })
+      closeEditModal(); await fetchUsers()
     } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: responseData.error || 'No se pudo actualizar el usuario',
-        confirmButtonColor: '#e74c3c'
-      })
+      await Swal.fire({ icon: 'error', title: 'Error', text: responseData.error || 'No se pudo actualizar el usuario' })
     }
-  } catch (err) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para guardar los cambios',
-      confirmButtonColor: '#e74c3c'
-    })
-  } finally {
-    saving.value = false
-  }
+  } catch {
+    await Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar al servidor para guardar los cambios' })
+  } finally { saving.value = false }
 }
 
-// Función para eliminar usuario
+/* ======== Eliminar / Restaurar ======== */
 async function deleteUser(id) {
-  const result = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: "Esta acción eliminará al usuario. ¿Deseas continuar?",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#e74c3c',
-    cancelButtonColor: '#95a5a6',
-    confirmButtonText: 'Sí, eliminar',
-    cancelButtonText: 'Cancelar'
-  })
-  
+  const result = await Swal.fire({ title: '¿Estás seguro?', text: 'Esta acción eliminará al usuario.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e74c3c', cancelButtonColor: '#95a5a6', confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar' })
   if (!result.isConfirmed) return
-
   try {
-    const res = await fetch(apiUrl(`/api/usuarios/${id}`), {
-      method: 'DELETE'
-    })
-    
+    const res = await fetch(apiUrl(`/api/usuarios/${id}`), { method: 'DELETE' })
     const responseData = await res.json()
-    
-    if (responseData.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Eliminado!',
-        text: 'Usuario eliminado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      await fetchUsers()
-    } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: responseData.error || 'No se pudo eliminar el usuario',
-        confirmButtonColor: '#e74c3c'
-      })
-    }
-  } catch (err) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para eliminar el usuario',
-      confirmButtonColor: '#e74c3c'
-    })
-  }
+    if (responseData.success) { await Swal.fire({ icon: 'success', title: '¡Eliminado!', text: 'Usuario eliminado exitosamente', confirmButtonColor: '#42b983' }); await fetchUsers() }
+    else { await Swal.fire({ icon: 'error', title: 'Error', text: responseData.error || 'No se pudo eliminar el usuario' }) }
+  } catch { await Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar al servidor para eliminar el usuario' }) }
 }
-
-// Función para restaurar usuario
 async function restoreUser(id) {
-  const result = await Swal.fire({
-    title: '¿Restaurar usuario?',
-    text: "¿Deseas restaurar este usuario?",
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonColor: '#3498db',
-    cancelButtonColor: '#95a5a6',
-    confirmButtonText: 'Sí, restaurar',
-    cancelButtonText: 'Cancelar'
-  })
-  
+  const result = await Swal.fire({ title: '¿Restaurar usuario?', text: '¿Deseas restaurar este usuario?', icon: 'question', showCancelButton: true, confirmButtonColor: '#3498db', cancelButtonColor: '#95a5a6', confirmButtonText: 'Sí, restaurar', cancelButtonText: 'Cancelar' })
   if (!result.isConfirmed) return
-
   try {
-    const res = await fetch(apiUrl(`/api/usuarios/${id}/restore`), {
-      method: 'POST'
-    })
-    
+    const res = await fetch(apiUrl(`/api/usuarios/${id}/restore`), { method: 'POST' })
     const responseData = await res.json()
-    
-    if (responseData.success) {
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Restaurado!',
-        text: responseData.message || 'Usuario restaurado exitosamente',
-        confirmButtonColor: '#42b983'
-      })
-      await fetchUsers()
-    } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: responseData.error || 'No se pudo restaurar el usuario',
-        confirmButtonColor: '#e74c3c'
-      })
-    }
-  } catch (err) {
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor para restaurar el usuario',
-      confirmButtonColor: '#e74c3c'
-    })
-  }
+    if (responseData.success) { await Swal.fire({ icon: 'success', title: '¡Restaurado!', text: responseData.message || 'Usuario restaurado exitosamente', confirmButtonColor: '#42b983' }); await fetchUsers() }
+    else { await Swal.fire({ icon: 'error', title: 'Error', text: responseData.error || 'No se pudo restaurar el usuario' }) }
+  } catch { await Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar al servidor para restaurar el usuario' }) }
 }
 
-// Función para formatear fechas
-function formatDate(dateString) {
-  if (!dateString) return 'No disponible'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+/* ======== Búsquedas ======== */
+function handleSearch() { activePage.value = 1; fetchUsers() }
+function clearSearch() { searchQuery.value = '' }
+function clearDeletedSearch() { searchDeletedQuery.value = '' }
 
-// Función para cerrar sesión
-function logout() {
-  // Aquí puedes agregar lógica de logout si es necesario
+/* ======== Utilidades ======== */
+function formatDate(d) {
+  if (!d) return 'No disponible'
+  const date = new Date(d)
+  return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
+function logout() { router.push('/') }
 
-// Cargar datos al montar el componente
 onMounted(fetchUsers)
 </script>

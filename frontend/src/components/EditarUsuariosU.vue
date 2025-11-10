@@ -1,136 +1,200 @@
 <template>
-  <div class="max-w-2xl mx-auto my-10 p-6 border border-gray-300 rounded-lg bg-gray-50 text-center">
-    <nav class="w-full bg-emerald-500 rounded-t-xl mb-6">
+  <div class="max-w-4xl mx-auto my-10 p-6 bg-white rounded-xl shadow-md">
+    <nav class="w-full bg-emerald-500 rounded-t-xl mb-8">
       <ul class="flex flex-wrap justify-center items-center list-none m-0 p-3 gap-4">
         <li>
-          <router-link to="/principal" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" exact>
-            Principal
+          <router-link to="/principal" class="text-white no-underline font-bold px-4 py-2 block transition-colors duration-200 rounded-lg hover:bg-emerald-600" exact>
+            <i class="fas fa-home mr-2"></i>Principal
           </router-link>
         </li>
         <li>
-          <router-link to="/mis-carros" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
-            Mis Carros
+          <router-link to="/mis-carros" class="text-white no-underline font-bold px-4 py-2 block transition-colors duration-200 rounded-lg hover:bg-emerald-600">
+            <i class="fas fa-car mr-2"></i>Mis Carros
           </router-link>
         </li>
         <li>
-          <router-link to="/mi-perfil" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600">
-            Mi Perfil
+          <router-link to="/editar-usuarios-u" class="bg-emerald-700 text-white no-underline font-bold px-4 py-2 block transition-colors duration-200 rounded-lg">
+            <i class="fas fa-user-circle mr-2"></i>Mi Perfil
           </router-link>
         </li>
         <li>
-          <router-link to="/" class="text-white no-underline font-bold px-3 py-2 block transition-colors duration-200 rounded hover:bg-emerald-600" @click.native="logout">
+          <button @click="logout" class="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:-translate-y-0.5">
+            <i class="fas fa-sign-out-alt"></i>
             Cerrar Sesión
-          </router-link>
+          </button>
         </li>
       </ul>
     </nav>
 
     <!-- Sección de Mi Perfil -->
-    <section class="mt-8 text-left">
-      <h2 class="text-2xl font-bold mb-6 text-gray-800 pb-2 border-b-2 border-emerald-500 text-center">Mi Perfil</h2>
+    <section class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Mi Perfil</h2>
+        <div class="flex gap-3">
+          <button @click="openEditModal" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2">
+            <i class="fas fa-edit"></i>
+            Editar Perfil
+          </button>
+          <button @click="openChangePasswordModal" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors duration-200 flex items-center gap-2">
+            <i class="fas fa-key"></i>
+            Cambiar Contraseña
+          </button>
+        </div>
+      </div>
 
-      <div v-if="loading" class="loading">Cargando información del perfil...</div>
-      <div v-if="errorMessage" class="error-text">{{ errorMessage }}</div>
+      <div v-if="loading" class="text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+        <p class="mt-2 text-gray-600">Cargando información del perfil...</p>
+      </div>
+      
+      <div v-else-if="errorMessage" class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+        <p class="font-bold">Error</p>
+        <p>{{ errorMessage }}</p>
+      </div>
 
-      <div v-else-if="currentUser" class="profile-container">
-        <!-- Tarjeta de perfil -->
-        <div class="profile-card">
-          <div class="profile-avatar">
-            <span>👤</span>
-          </div>
-          <div class="profile-details">
-            <h3>{{ currentUser.first_name || currentUser.firstName }} {{ currentUser.last_name || currentUser.lastName }}</h3>
-            <div class="detail-item">
-              <strong>ID:</strong> {{ currentUser.id }}
-            </div>
-            <div class="detail-item">
-              <strong>Email:</strong> {{ currentUser.email }}
-            </div>
-            <div class="detail-item">
-              <strong>Teléfono:</strong> {{ currentUser.phone || 'No proporcionado' }}
-            </div>
-            <div class="detail-item">
-              <strong>Rol:</strong> 
-              <span class="role-badge" :class="currentUser.role">
-                {{ currentUser.role === 'admin' ? 'Administrador' : 'Usuario' }}
-              </span>
-            </div>
-            <div class="detail-item" v-if="currentUser.createdAt">
-              <strong>Miembro desde:</strong> {{ formatDate(currentUser.createdAt) }}
+      <div v-else-if="currentUser" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 md:flex md:items-start md:space-x-6">
+          <!-- Avatar -->
+          <div class="flex-shrink-0 mb-6 md:mb-0">
+            <div class="h-32 w-32 rounded-full bg-emerald-100 flex items-center justify-center text-5xl text-emerald-600">
+              {{ (currentUser.first_name?.[0] || currentUser.firstName?.[0] || '').toUpperCase() }}
             </div>
           </div>
-          <div class="profile-actions">
-            <button @click="openEditModal" class="edit-btn">
-              ✏️ Editar Perfil
-            </button>
-            <button @click="openChangePasswordModal" class="change-password-btn">
-              🔑 Cambiar Contraseña
-            </button>
+          
+          <!-- Detalles del perfil -->
+          <div class="flex-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Información Personal</h3>
+                <div class="space-y-2">
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">Nombre completo:</span><br>
+                    {{ currentUser.first_name || currentUser.firstName }} {{ currentUser.last_name || currentUser.lastName }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">Correo electrónico:</span><br>
+                    {{ currentUser.email }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">Teléfono:</span><br>
+                    {{ currentUser.phone || 'No proporcionado' }}
+                  </p>
+                </div>
+              </div>
+              
+              <div class="p-4 bg-gray-50 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">Detalles de la Cuenta</h3>
+                <div class="space-y-2">
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">ID de usuario:</span><br>
+                    {{ currentUser.id }}
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">Rol:</span>
+                    <span :class="{
+                      'ml-2 px-2 py-1 rounded-full text-xs font-semibold': true,
+                      'bg-green-100 text-green-800': currentUser.role === 'admin',
+                      'bg-blue-100 text-blue-800': currentUser.role === 'user'
+                    }">
+                      {{ currentUser.role === 'admin' ? 'Administrador' : 'Usuario' }}
+                    </span>
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    <span class="font-medium text-gray-800">Miembro desde:</span><br>
+                    {{ formatDate(currentUser.createdAt) }}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Modal de Edición de Perfil -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Editar Mi Perfil</h3>
-          <button @click="closeEditModal" class="close-btn">&times;</button>
+    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 p-4 overflow-y-auto" @click.self="closeEditModal">
+      <div class="relative bg-white rounded-xl w-full max-w-2xl my-8 border border-gray-300 shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-800">Editar Mi Perfil</h3>
+          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
         
-        <form @submit.prevent="saveProfileChanges" class="edit-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editFirstName">Nombre:</label>
+        <form @submit.prevent="saveProfileChanges" class="p-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="mb-5">
+              <label for="editFirstName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Nombre:</label>
               <input
                 id="editFirstName"
                 v-model="editingUser.firstName"
+                @input="editingUser.firstName = sanitizeName(editingUser.firstName)"
+                @keypress="allowOnlyLetters"
                 type="text"
-                class="form-input"
+                maxlength="50"
+                class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
                 required
               />
+              <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
             </div>
 
-            <div class="form-group">
-              <label for="editLastName">Apellido:</label>
+            <div class="mb-5">
+              <label for="editLastName" class="block mb-2 text-gray-700 font-bold text-lg text-center">Apellido:</label>
               <input
                 id="editLastName"
                 v-model="editingUser.lastName"
+                @input="editingUser.lastName = sanitizeName(editingUser.lastName)"
+                @keypress="allowOnlyLetters"
                 type="text"
-                class="form-input"
+                maxlength="50"
+                class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
                 required
               />
+              <small class="text-gray-500 text-xs text-center block mt-1">Máximo 50 caracteres</small>
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="editEmail">Email:</label>
+          <div class="mb-5">
+            <label for="editEmail" class="block mb-2 text-gray-700 font-bold text-lg text-center">Correo Electrónico:</label>
             <input
               id="editEmail"
               v-model="editingUser.email"
               type="email"
-              class="form-input"
+              maxlength="100"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Máximo 100 caracteres</small>
           </div>
 
-          <div class="form-group">
-            <label for="editPhone">Teléfono:</label>
+          <div class="mb-5">
+            <label for="editPhone" class="block mb-2 text-gray-700 font-bold text-lg text-center">Teléfono:</label>
             <input
               id="editPhone"
               v-model="editingUser.phone"
+              @input="editingUser.phone = sanitizePhone(editingUser.phone)"
+              @keypress="allowOnlyDigits"
               type="tel"
-              class="form-input"
-              placeholder="Opcional"
+              maxlength="20"
+              inputmode="numeric"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
+              placeholder="Ej: 3001234567"
             />
+            <small class="text-gray-500 text-xs text-center block mt-1">Solo se permiten números</small>
           </div>
 
-          <div class="form-actions">
-            <button type="button" @click="closeEditModal" class="cancel-btn">
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+            <button 
+              type="button" 
+              @click="closeEditModal" 
+              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
+              :disabled="saving"
+            >
               Cancelar
             </button>
-            <button type="submit" class="save-btn" :disabled="saving">
+            <button 
+              type="submit" 
+              class="px-6 py-3 bg-emerald-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-emerald-600 hover:-translate-y-1 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              :disabled="saving"
+            >
               {{ saving ? 'Guardando...' : 'Guardar Cambios' }}
             </button>
           </div>
@@ -139,61 +203,60 @@
     </div>
 
     <!-- Modal de Cambiar Contraseña -->
-    <div v-if="showChangePasswordModal" class="modal-overlay" @click="closeChangePasswordModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>Cambiar Contraseña</h3>
-          <button @click="closeChangePasswordModal" class="close-btn">&times;</button>
+    <div v-if="showChangePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4" @click.self="closeChangePasswordModal">
+      <div class="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-gray-300 shadow-2xl">
+        <div class="flex justify-between items-center p-5 border-b border-gray-200">
+          <h3 class="text-lg font-bold text-gray-800">Cambiar Contraseña</h3>
+          <button @click="closeChangePasswordModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
         
-        <form @submit.prevent="changePassword" class="edit-form">
-          <div class="form-group">
-            <label for="currentPassword">Contraseña Actual:</label>
+        <form @submit.prevent="changePassword" class="p-5">
+          <p class="mb-4 text-gray-700">Establecer nueva contraseña para tu cuenta</p>
+          
+          <div class="mb-5">
+            <label for="currentPassword" class="block mb-2 text-gray-700 font-medium">Contraseña Actual:</label>
             <input
               id="currentPassword"
               v-model="passwordData.currentPassword"
               type="password"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
+              minlength="6"
             />
           </div>
-
-          <div class="form-group">
-            <label for="newPassword">Nueva Contraseña:</label>
+          
+          <div class="mb-5">
+            <label for="newPassword" class="block mb-2 text-gray-700 font-medium">Nueva Contraseña:</label>
             <input
               id="newPassword"
               v-model="passwordData.newPassword"
               type="password"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
-              placeholder="Mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial"
+              minlength="6"
             />
+            <small class="text-gray-500 text-xs block mt-1">Mínimo 6 caracteres</small>
           </div>
-
-          <div class="form-group">
-            <label for="confirmPassword">Confirmar Nueva Contraseña:</label>
+          
+          <div class="mb-5">
+            <label for="confirmNewPassword" class="block mb-2 text-gray-700 font-medium">Confirmar Nueva Contraseña:</label>
             <input
-              id="confirmPassword"
-              v-model="passwordData.confirmPassword"
+              id="confirmNewPassword"
+              v-model="passwordData.confirmNewPassword"
               type="password"
-              class="form-input"
+              class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none"
               required
+              minlength="6"
             />
           </div>
-
-          <div class="password-requirements">
-            <small>
-              <strong>Requisitos de la contraseña:</strong><br>
-              • Mínimo 8 caracteres<br>
-              • Al menos una mayúscula<br>
-              • Al menos una minúscula<br>
-              • Al menos un número<br>
-              • Al menos un carácter especial
-            </small>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" @click="closeChangePasswordModal" class="cancel-btn">
+          
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+            <button 
+              type="button" 
+              @click="closeChangePasswordModal" 
+              class="px-6 py-3 bg-gray-500 text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-600 hover:-translate-y-1"
+              :disabled="changingPassword"
+            >
               Cancelar
             </button>
             <button type="submit" class="save-btn" :disabled="changingPassword">
@@ -453,6 +516,30 @@ async function changePassword() {
   }
 }
 
+// Función para validar el campo de teléfono
+function validatePhone(event) {
+  // Remover cualquier carácter que no sea número
+  let phone = event.target.value.replace(/\D/g, '');
+  // Actualizar el valor del input
+  event.target.value = phone;
+  // Actualizar el modelo de datos
+  editingUser.value.phone = phone;
+}
+
+// Función para validar el campo de nombre
+function validateName(field) {
+  // Remover números y caracteres especiales, permitir letras, espacios y acentos
+  let value = editingUser.value[field];
+  if (value) {
+    // Permitir letras, espacios y caracteres acentuados
+    value = value.replace(/[^\p{L}\s]/gu, '');
+    // Reemplazar múltiples espacios por uno solo
+    value = value.replace(/\s+/g, ' ').trim();
+    // Actualizar el modelo de datos
+    editingUser.value[field] = value;
+  }
+}
+
 // Función para formatear fechas
 function formatDate(dateString) {
   if (!dateString) return 'No disponible'
@@ -463,6 +550,7 @@ function formatDate(dateString) {
     day: 'numeric'
   })
 }
+  
 
 // Función para cerrar sesión
 function logout() {
