@@ -4,38 +4,68 @@
       <h1 class="text-2xl font-bold">¡Bienvenido, {{ userName }}!</h1>
       <p class="text-gray-600">¿Qué te gustaría hacer hoy?</p>
     </div>
+
     <h1 v-else class="text-2xl font-bold mb-4">Iniciar Sesión</h1>
+
     <div>
+      <!-- Email -->
       <div class="mb-4">
         <label for="email" class="block mb-1 text-black">Correo Electrónico:</label>
-        <input 
-          id="email" 
-          v-model="email" 
-          type="email" 
+        <input
+          id="email"
+          v-model.trim="email"
+          type="email"
           autocomplete="email"
           placeholder="tu@email.com"
           :disabled="loading"
-          class="w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed"
+          @input="checkEmail()"
+          @blur="checkEmail(true)"
+          :class="[
+            'w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed outline-none',
+            emailError ? 'border-red-500' : (emailTouched && email ? 'border-emerald-500' : 'border-gray-300')
+          ]"
         />
+        <p v-if="emailError" class="text-red-600 mt-1 text-sm">{{ emailError }}</p>
+        <p v-else-if="emailHint" class="text-gray-500 mt-1 text-xs">{{ emailHint }}</p>
       </div>
+
+      <!-- Password -->
       <div class="mb-4">
         <label for="password" class="block mb-1 text-black">Contraseña:</label>
-        <input 
-          id="password" 
-          v-model="password" 
-          type="password" 
+        <input
+          id="password"
+          v-model="password"
+          type="password"
           autocomplete="current-password"
           placeholder="Tu contraseña"
           :disabled="loading"
-          class="w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed"
+          @input="checkPassword()"
+          @blur="checkPassword(true)"
+          :class="[
+            'w-full p-2 border rounded text-black disabled:bg-gray-200 disabled:cursor-not-allowed outline-none',
+            passwordError ? 'border-red-500' : (passwordTouched && password ? 'border-emerald-500' : 'border-gray-300')
+          ]"
         />
+        <p v-if="passwordError" class="text-red-600 mt-1 text-sm">{{ passwordError }}</p>
       </div>
-      <button @click="login" :disabled="loading" class="w-full p-2 bg-green-500 text-white rounded cursor-pointer mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed">
+
+      <!-- Actions -->
+      <button
+        @click="login"
+        :disabled="loading"
+        class="w-full p-2 bg-green-500 text-white rounded cursor-pointer mb-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      >
         <span v-if="loading">Iniciando sesión...</span>
         <span v-else>Entrar</span>
       </button>
+
       <p v-if="error" class="text-red-600 mt-2 mb-2 text-center">{{ error }}</p>
-      <button @click="registrar" :disabled="loading" class="w-full p-2 bg-green-500 text-white rounded cursor-pointer">
+
+      <button
+        @click="registrar"
+        :disabled="loading"
+        class="w-full p-2 bg-green-500 text-white rounded cursor-pointer"
+      >
         Registrarte
       </button>
     </div>
@@ -54,16 +84,97 @@ const loading = ref(false)
 const router = useRouter()
 const userName = ref(localStorage.getItem('userName') || '')
 
+// Validación reactiva
+const emailError = ref('')
+const emailHint  = ref('')
+const emailTouched = ref(false)
+
+const passwordError = ref('')
+const passwordTouched = ref(false)
+
+// Valida email "paso a paso"
+function checkEmail(markTouched = false) {
+  if (markTouched) emailTouched.value = true
+  emailError.value = ''
+  emailHint.value = ''
+
+  const v = (email.value || '').trim()
+
+  if (!v) {
+    emailError.value = 'El correo es obligatorio'
+    return
+  }
+
+  // Reglas paso a paso
+  if (!v.includes('@')) {
+    emailError.value = 'Falta el símbolo "@" en el correo'
+    emailHint.value = 'Ejemplo: nombre@gmail.com'
+    return
+  }
+
+  const [local, domain] = v.split('@')
+  if (!local) {
+    emailError.value = 'Falta el nombre antes de "@"'
+    emailHint.value = 'Ejemplo: usuario@dominio.com'
+    return
+  }
+  if (!domain) {
+    emailError.value = 'Falta el dominio después de "@"'
+    emailHint.value = 'Ejemplo: usuario@gmail.com'
+    return
+  }
+
+  if (!domain.includes('.')) {
+    emailError.value = 'Falta la terminación del dominio (ej. .com, .mx)'
+    emailHint.value = 'Ejemplo: usuario@gmail.com o usuario@empresa.com.mx'
+    return
+  }
+
+  // Regex general (simple y suficiente)
+  const basicEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!basicEmail.test(v)) {
+    emailError.value = 'Formato de correo inválido'
+    emailHint.value = 'Revisa que no tenga espacios y que el dominio sea válido'
+    return
+  }
+
+  // Sugerencias leves
+  if (/@(gmail|outlook|hotmail|yahoo)$/.test(v)) {
+    emailHint.value = '¿Te faltó ".com"? Ej: ' + v + '.com'
+  } else if (/\.co$/.test(v)) {
+    emailHint.value = '¿Quisiste decir ".com"? Verifica tu dominio'
+  }
+}
+
+// Valida password (solo requerido en login)
+function checkPassword(markTouched = false) {
+  if (markTouched) passwordTouched.value = true
+  passwordError.value = ''
+  const v = password.value || ''
+
+  if (!v) {
+    passwordError.value = 'La contraseña es obligatoria'
+    return
+  }
+}
+
 async function login() {
+  // Validar antes de enviar
+  checkEmail(true)
+  checkPassword(true)
+
+  if (emailError.value || passwordError.value) {
+    error.value = 'Corrige los campos marcados antes de continuar'
+    return
+  }
+
   loading.value = true
   error.value = ''
 
   try {
     const response = await fetch(apiUrl('/api/auth/login'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: email.value.trim(),
         password: password.value
@@ -71,64 +182,49 @@ async function login() {
     })
 
     const data = await response.json()
-    
-    // Mostrar la respuesta completa del servidor para depuración
+
+    // Debug opcional
     console.log('Respuesta completa del servidor:', {
       status: response.status,
       statusText: response.statusText,
       data: data,
       headers: Object.fromEntries(response.headers.entries())
-    });
-    
+    })
+
     if (response.ok) {
-      // Extraer información del usuario de la respuesta
-      const userInfo = data.data || data;
-      
-      // Si no hay información del usuario, lanzar error
-      if (!userInfo) {
-        console.error('No se recibió información del usuario en la respuesta:', data);
-        throw new Error('Error en la autenticación: respuesta del servidor incompleta');
-      }
-      
-      // Usar el ID como token temporal si no hay token
-      // NOTA: Esto es temporal - idealmente el servidor debería devolver un token JWT
-      const token = userInfo.id ? `temp-token-${userInfo.id}` : 'no-token';
-      
-      console.log('Usuario autenticado:', userInfo);
-      const userId = userInfo.id || userInfo._id || '';
-      const userRole = userInfo.role || 'user';
-      
-      // Construir el nombre del usuario
-      let userNameValue = 'Usuario';
+      const userInfo = data.data || data
+      if (!userInfo) throw new Error('Error en la autenticación: respuesta del servidor incompleta')
+
+      // Token temporal si no hay JWT
+      const token = userInfo.id ? `temp-token-${userInfo.id}` : 'no-token'
+      const userId = userInfo.id || userInfo._id || ''
+      const userRole = userInfo.role || 'user'
+
+      let userNameValue = 'Usuario'
       if (userInfo.firstName || userInfo.lastName) {
-        userNameValue = `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim();
+        userNameValue = `${userInfo.firstName || ''} ${userInfo.lastName || ''}`.trim()
       } else if (userInfo.name) {
-        userNameValue = userInfo.name;
+        userNameValue = userInfo.name
       } else if (userInfo.username) {
-        userNameValue = userInfo.username;
+        userNameValue = userInfo.username
       } else if (userInfo.email) {
-        userNameValue = userInfo.email.split('@')[0];
+        userNameValue = userInfo.email.split('@')[0]
       }
-      
-      // Guardar en localStorage
-      localStorage.setItem('userId', userId.toString());
-      localStorage.setItem('token', token);
-      localStorage.setItem('userRole', userRole);
-      localStorage.setItem('userName', userNameValue);
-      
-      // Actualizar el estado reactivo
-      userName.value = userNameValue;
-      
-      // Redirigir a la página principal
-      router.push({ name: 'Principal' });
+
+      localStorage.setItem('userId', userId.toString())
+      localStorage.setItem('token', token)
+      localStorage.setItem('userRole', userRole)
+      localStorage.setItem('userName', userNameValue)
+
+      userName.value = userNameValue
+      router.push({ name: 'Principal' })
     } else {
-      // Manejar error de autenticación
-      const errorMessage = data.error || data.message || 'Usuario o contraseña incorrectos';
-      throw new Error(errorMessage);
+      const errorMessage = data.error || data.message || 'Usuario o contraseña incorrectos'
+      throw new Error(errorMessage)
     }
   } catch (err) {
-    console.error('Error en login:', err);
-    error.value = err.message || 'Error de conexión. Verifica que el servidor esté funcionando y las credenciales sean correctas.';
+    console.error('Error en login:', err)
+    error.value = err.message || 'Error de conexión. Verifica servidor y credenciales.'
   } finally {
     loading.value = false
   }
