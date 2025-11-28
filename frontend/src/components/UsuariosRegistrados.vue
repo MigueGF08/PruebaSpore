@@ -492,7 +492,7 @@
           <button @click="closeResetPasswordModal" class="text-gray-500 hover:text-gray-800 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors duration-200">&times;</button>
         </div>
         <form @submit.prevent="resetPassword" class="p-5">
-          <p class="mb-4 text-gray-700">Establecer nueva contraseña para <strong>{{ resetPasswordUser.firstName }} {{ resetPasswordUser.lastName }}</strong> ({{ resetPasswordUser.email }})</p>
+          <p class="mb-4 text-gray-700">Establecer nueva contraseña para <strong>{{ resetPasswordUser.first_name || resetPasswordUser.firstName }} {{ resetPasswordUser.last_name || resetPasswordUser.lastName }}</strong> ({{ resetPasswordUser.email }})</p>
           <div class="mb-5">
             <label for="newPassword2" class="block mb-2 text-gray-700 font-medium">Nueva Contraseña:</label>
             <input id="newPassword2" v-model="resetPasswordData.newPassword" type="password" class="w-full p-3 border border-gray-300 rounded-lg text-base box-border bg-white text-gray-800 transition-colors duration-200 focus:border-emerald-500 focus:outline-none" required minlength="6" />
@@ -727,6 +727,55 @@ function openEditModal(user) {
   showEditModal.value = true
 }
 function closeEditModal() { showEditModal.value = false; editingUser.value = {} }
+
+/* ======== Restablecer Contraseña ======== */
+function openResetPasswordModal(user) {
+  resetPasswordUser.value = { ...user }
+  resetPasswordData.value = { newPassword: '', confirmPassword: '' }
+  showResetPasswordModal.value = true
+}
+
+function closeResetPasswordModal() {
+  showResetPasswordModal.value = false
+  resetPasswordUser.value = {}
+  resetPasswordData.value = { newPassword: '', confirmPassword: '' }
+}
+
+async function resetPassword() {
+  if (resetPasswordData.value.newPassword !== resetPasswordData.value.confirmPassword) {
+    await Swal.fire({ icon: 'error', title: 'Error', text: 'Las contraseñas no coinciden' })
+    return
+  }
+
+  if (!isValidPassword(resetPasswordData.value.newPassword)) {
+    await Swal.fire({ icon: 'error', title: 'Contraseña inválida', text: 'La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial' })
+    return
+  }
+
+  resettingPassword.value = true
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No se encontró el token de autenticación')
+
+    const res = await fetch(apiUrl(`/api/usuarios/${resetPasswordUser.value.id}/password`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ newPassword: resetPasswordData.value.newPassword })
+    })
+    const responseData = await res.json()
+    if (responseData.success) {
+      await Swal.fire({ icon: 'success', title: '¡Éxito!', text: responseData.message || 'Contraseña restablecida exitosamente', confirmButtonColor: '#42b983' })
+      closeResetPasswordModal()
+    } else {
+      await Swal.fire({ icon: 'error', title: 'Error', text: responseData.error || 'No se pudo restablecer la contraseña' })
+    }
+  } catch (error) {
+    console.error('Error:', error)
+    await Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar al servidor para restablecer la contraseña' })
+  } finally {
+    resettingPassword.value = false
+  }
+}
 
 async function saveUserChanges() {
   // Validaciones front
